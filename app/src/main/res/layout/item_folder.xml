@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="horizontal"
+    android:paddingVertical="12dp"
+    android:paddingHorizontal="8dp">
+
+    <ImageView
+        android:id="@+id/ivFolderIcon"
+        android:layout_width="24dp"
+        android:layout_height="24dp"
+        android:layout_marginEnd="8dp"
+        android:src="@drawable/ic_folder"
+        android:contentDescription="Folder Icon" />
+
+    <TextView
+        android:id="@+id/tvFolderName"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Folder Name"
+        android:textSize="16sp" />
+
+
+</LinearLayout>

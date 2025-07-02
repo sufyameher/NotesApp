@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/topBar"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="horizontal"
+    android:padding="16dp"
+    android:background="@color/white"
+    android:gravity="center_vertical">
+
+    <ImageView
+        android:id="@+id/ivNavToggle"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:src="@drawable/ic_menu_24"
+        android:contentDescription="Open drawer"
+        android:layout_marginEnd="10dp"
+        android:padding="0dp" />
+
+    <com.example.notesapp.util.TopBarTitleTextView
+        android:id="@+id/tvTopBarTitle"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:text=""
+        android:textStyle="bold"
+        android:textSize="19sp" />
+
+    <ImageView
+        android:id="@+id/ivSearch"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginEnd="12dp"
+        android:contentDescription="Search"
+        android:src="@drawable/ic_search" />
+
+    <ImageView
+        android:id="@+id/ivNewFolder"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginEnd="12dp"
+        android:contentDescription="New Folder"
+        android:src="@drawable/ic_create_new_folder" />
+
+    <ImageView
+        android:id="@+id/ivThreeDots"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:contentDescription="More Options"
+        android:src="@drawable/ic_more_vertical" />
+
+</LinearLayout>
+
+

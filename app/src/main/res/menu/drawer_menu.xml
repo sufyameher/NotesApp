@@ -1,0 +1,13 @@
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+    <group android:checkableBehavior="single">
+        <item
+            android:id="@+id/nav_home"
+            android:icon="@drawable/nav_home"
+            android:title="Home"/>
+        <item
+            android:id="@+id/nav_recently_deleted"
+            android:icon="@drawable/ic_recently_deleted"
+            android:title="Recently deleted"/>
+    </group>
+</menu>
+
