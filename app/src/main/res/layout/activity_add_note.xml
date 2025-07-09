@@ -1,51 +1,100 @@
 <LinearLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    android:padding="20dp"
     android:background="@android:color/white">
 
-    <!-- Back Button -->
-    <ImageView
-        android:id="@+id/ivBack"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:contentDescription="Back"
-        android:padding="4dp"
-        android:src="@drawable/ic_arrow_back" />
-
-    <!-- Spacer -->
-    <View
+    <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="12dp" />
+        android:layout_height="42dp"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:padding="8dp">
 
-    <!-- Title -->
-    <EditText
-        android:id="@+id/etTitle"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:background="@null"
-        android:hint="Title"
-        android:textStyle="bold"
-        android:textSize="18sp"
-        android:padding="8dp" />
+        <ImageView
+            android:id="@+id/ivBack"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:contentDescription="Back"
+            android:padding="0dp"
+            android:src="@drawable/ic_arrow_back" />
 
-    <!-- Spacer -->
-    <View
-        android:layout_width="match_parent"
-        android:layout_height="8dp" />
+        <EditText
+            android:id="@+id/etTitle"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="8dp"
+            android:layout_weight="1"
+            android:background="@null"
+            android:hint="Title"
+            android:singleLine="true"
+            android:textSize="17sp"
+            android:textStyle="bold"
+            android:typeface="monospace" />
+    </LinearLayout>
 
-    <!-- Description -->
-    <EditText
-        android:id="@+id/etDesc"
+    <WebView
+        android:id="@+id/webView"
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_weight="1"
-        android:background="@null"
-        android:gravity="top"
-        android:hint="Description"
-        android:padding="8dp"
-        android:textSize="16sp"
-        android:minLines="5" />
+        tools:ignore="WebViewLayout" />
+
+
+<!--        <EditText-->
+<!--            android:id="@+id/etDesc"-->
+<!--            android:layout_width="match_parent"-->
+<!--            android:layout_height="wrap_content"-->
+<!--            android:background="@null"-->
+<!--            android:textSize="16sp"-->
+<!--            android:padding="6dp"-->
+<!--            android:inputType="textMultiLine"-->
+<!--            android:typeface="monospace"-->
+<!--            android:hint="Description" />-->
+
+
+    <LinearLayout
+        android:id="@+id/formattingToolbar"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom"
+        android:orientation="horizontal"
+        android:background="@drawable/bg_toolbar_top_border"
+        android:padding="4dp">
+
+        <ImageView
+            android:id="@+id/btnCheckbox"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:src="@drawable/ic_checkbox"
+            android:contentDescription="Checkbox"
+            android:padding="10dp" />
+
+        <ImageView
+            android:id="@+id/btnBullet"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:src="@drawable/ic_bullet"
+            android:contentDescription="Bullet"
+            android:padding="10dp" />
+
+        <ImageView
+            android:id="@+id/btnNumber"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:src="@drawable/ic_number"
+            android:contentDescription="Number"
+            android:padding="10dp" />
+
+        <ImageView
+            android:id="@+id/btnImage"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:padding="10dp"
+            android:src="@drawable/ic_image"
+        android:contentDescription="Add Image" />
+
+    </LinearLayout>
 </LinearLayout>

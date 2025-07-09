@@ -10,7 +10,7 @@ import com.example.notesapp.common.Helper.toast
 import com.example.notesapp.databinding.ActivityRecentlyDeletedBinding
 import com.example.notesapp.note.NoteEntity
 import com.example.notesapp.util.showMoveConfirmDialog
-import com.example.notesapp.folder.FolderViewModel
+import com.example.notesapp.folder.data.FolderViewModel
 import com.example.notesapp.note.NoteViewModel
 
 class TrashActivity : AppCompatActivity() {
@@ -41,13 +41,39 @@ class TrashActivity : AppCompatActivity() {
         binding.recyclerView.apply {
             layoutManager = LinearLayoutManager(this@TrashActivity)
             adapter = this@TrashActivity.adapter
+
+            // ✅ Make a final val to avoid smart cast issue
+            val currentAdapter = this@TrashActivity.adapter
+
+            val swipeCallback = object : androidx.recyclerview.widget.ItemTouchHelper.SimpleCallback(0, androidx.recyclerview.widget.ItemTouchHelper.LEFT or androidx.recyclerview.widget.ItemTouchHelper.RIGHT) {
+                override fun onMove(
+                    recyclerView: androidx.recyclerview.widget.RecyclerView,
+                    viewHolder: androidx.recyclerview.widget.RecyclerView.ViewHolder,
+                    target: androidx.recyclerview.widget.RecyclerView.ViewHolder
+                ): Boolean = false
+
+                override fun onSwiped(viewHolder: androidx.recyclerview.widget.RecyclerView.ViewHolder, direction: Int) {
+                    val position = viewHolder.adapterPosition
+                    val note = currentAdapter.currentList.getOrNull(position)
+
+                    if (note != null) {
+                        showDeletedNoteOptions(note)
+                        currentAdapter.notifyItemChanged(position) // ✅ reset swipe animation
+                    } else {
+                        currentAdapter.notifyItemChanged(position)
+                    }
+                }
+            }
+
+            androidx.recyclerview.widget.ItemTouchHelper(swipeCallback).attachToRecyclerView(this)
         }
     }
+
 
     private fun setupAdapter() {
         adapter = NoteAdapter(
             onItemClick = { /* Optional: preview deleted note */ },
-            onNoteLongClick = { note -> showDeletedNoteOptions(note) }
+            onNoteLongClick = { /* Do nothing */ }
         )
     }
 
@@ -109,5 +135,12 @@ class TrashActivity : AppCompatActivity() {
                 noteViewModel.permanentlyDeleteAll()
             }
             .show()
+    }
+
+    companion object {
+        fun start(context: android.content.Context) {
+            val intent = android.content.Intent(context, TrashActivity::class.java)
+            context.startActivity(intent)
+        }
     }
 }

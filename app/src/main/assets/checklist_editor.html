@@ -1,0 +1,607 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <style>
+        body {
+          font-family: sans-serif;
+          padding: 16px;
+        }
+
+        .line {
+  display: flex;
+  align-items: flex-start; /* Top-align checkbox and textarea */
+  margin-bottom: 0px;
+}
+
+.resizable-image-wrapper {
+  position: relative;
+  display: inline-block;
+  border: 1px solid transparent;
+  margin: 10px auto;
+  display: block;
+  max-width: 100%;
+}
+
+.resizable-image-wrapper.selected {
+  border: 1px solid #5B75E5; /* Blue border */
+}
+
+.resizable-image {
+  width: 100%;
+  max-width: 100%;
+  display: block;
+  border-radius: 8px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+}
+
+/* Resize handles (corners) */
+.resizable-image-wrapper.selected::after,
+.resizable-image-wrapper.selected::before {
+  content: '';
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  background: #5B75E5;
+  border-radius: 2px;
+  z-index: 10;
+}
+
+.resizable-image-wrapper.selected::before {
+  top: -5px;
+  right: -5px;
+  cursor: nwse-resize;
+}
+
+.resizable-image-wrapper.selected::after {
+  bottom: -5px;
+  right: -5px;
+  cursor: nwse-resize;
+}
+
+
+
+.line textarea {
+  flex: 1;
+  font-size: 15px;
+  padding: 0px 0px; /* ⬅️ Less top/bottom padding */
+  border: none;
+  outline: none;
+  resize: none;
+  overflow: hidden;
+  background: transparent;
+  box-shadow: none;
+  line-height: 20px;
+  min-height: 20px;
+}
+
+        .checkbox-wrapper {
+          position: relative;
+
+            justify-content: center;
+            align-items: center;
+           display: flex;
+
+          width: 16px;
+          height: 16px;
+          margin-right: 8px;
+        }
+
+        .checkbox-wrapper input[type="checkbox"] {
+          position: absolute;
+          opacity: 0;
+          width: 100%;
+          height: 100%;
+          cursor: pointer;
+          z-index: 2;
+        }
+
+        .checkbox-custom {
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          width: 16px;
+          height: 16px;
+          background-color: #fff;
+          border: 2px solid #000;
+          border-radius: 3px;
+          box-sizing: border-box;
+        }
+
+        .checkbox-wrapper input[type="checkbox"]:checked + .checkbox-custom::after {
+          content: "";
+          display: block;
+          width: 6px;
+          height: 10px;
+          border: solid black;
+          border-width: 0 2px 2px 0;
+          transform: rotate(45deg);
+        }
+
+        .line.strikethrough textarea {
+  text-decoration: line-through;
+  color: #888;
+}
+
+        .line.strikethrough .checkbox-custom {
+          filter: grayscale(100%);
+          opacity: 0.5;
+        }
+    </style>
+</head>
+<body>
+<div id="checklist"></div>
+
+<script>
+
+
+
+function addLine(text = "", isCheckbox = false, isChecked = false, isBullet = false, isNumbered = false, insertAfter = null) {
+  const container = document.getElementById('checklist');
+  const line = document.createElement('div');
+  line.className = 'line';
+
+  // ✅ Numbered marker
+  if (isNumbered) {
+  const allLines = Array.from(container.querySelectorAll('.line'));
+  const lastLine = insertAfter || allLines[allLines.length - 1];
+  let count = 0;
+
+  for (let i = allLines.indexOf(lastLine); i >= 0; i--) {
+    const prev = allLines[i];
+    if (prev.querySelector('.bullet-marker') || prev.querySelector('.checkbox-wrapper')) break;
+    if (prev.querySelector('.number-marker')) count++;
+    else break;
+  }
+
+  const numberSpan = document.createElement('span');
+  numberSpan.textContent = `${count + 1}.`;
+  numberSpan.style.marginRight = '8px';
+  numberSpan.style.fontSize = '16px';
+  numberSpan.className = 'number-marker';
+  line.appendChild(numberSpan);
+}
+
+
+  // ✅ Bullet marker (•)
+  if (isBullet) {
+    const bulletSpan = document.createElement('span');
+    bulletSpan.textContent = '•';
+    bulletSpan.style.marginRight = '8px';
+    bulletSpan.style.fontSize = '16px';
+    bulletSpan.className = 'bullet-marker';
+    line.appendChild(bulletSpan);
+  }
+
+  // ✅ Checkbox
+  if (isCheckbox) {
+    const checkboxWrapper = createCheckboxWrapper(line, isChecked);
+    line.appendChild(checkboxWrapper);
+  }
+
+  // ✅ Text input
+  const input = document.createElement('textarea');
+  input.value = text || '';
+  input.style.height = 'auto';
+  input.style.height = input.scrollHeight + 'px';
+
+  setTimeout(() => {
+    input.style.height = 'auto';
+    input.style.height = input.scrollHeight + 'px';
+  }, 0);
+
+  input.addEventListener('input', () => {
+    input.style.height = 'auto';
+    input.style.height = input.scrollHeight + 'px';
+  });
+
+  // ✅ Enter & Backspace logic
+  input.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      const hasCheckbox = line.querySelector('input[type="checkbox"]') !== null;
+      const hasBullet = line.querySelector('.bullet-marker') !== null;
+      const hasNumber = line.querySelector('.number-marker') !== null;
+
+      addLine("", hasCheckbox, false, hasBullet, hasNumber, line);
+
+      setTimeout(renumberAllNumberedLines, 0);
+
+    } else if (e.key === 'Backspace' && input.value === '') {
+      const checkbox = line.querySelector('.checkbox-wrapper');
+      const bullet = line.querySelector('.bullet-marker');
+      const number = line.querySelector('.number-marker');
+
+      if (checkbox) {
+        e.preventDefault();
+        line.removeChild(checkbox);
+        line.classList.remove('strikethrough');
+      } else if (bullet) {
+        e.preventDefault();
+        line.removeChild(bullet);
+      } else if (number) {
+        e.preventDefault();
+        line.removeChild(number);
+      } else {
+        e.preventDefault();
+        const lines = Array.from(container.querySelectorAll('.line'));
+        const index = lines.indexOf(line);
+        container.removeChild(line);
+        if (index > 0) {
+          const prevInput = lines[index - 1].querySelector('textarea');
+          prevInput?.focus();
+        }
+      }
+          setTimeout(renumberAllNumberedLines, 0);
+
+    }
+  });
+
+  line.appendChild(input);
+
+  if (insertAfter) {
+    insertAfter.insertAdjacentElement('afterend', line);
+  } else {
+    container.appendChild(line);
+  }
+
+  input.focus();
+}
+
+
+function toggleBulletOnCurrentLine() {
+  const active = document.activeElement;
+  if (!active || active.tagName !== 'TEXTAREA') return;
+
+  const line = active.closest('.line');
+  if (!line) return;
+
+  const existingBullet = line.querySelector('.bullet-marker');
+  const existingCheckbox = line.querySelector('.checkbox-wrapper');
+  const existingNumber = line.querySelector('.number-marker');
+
+  if (existingBullet) {
+    line.removeChild(existingBullet);
+  } else {
+    // Remove checkbox or number
+    if (existingCheckbox) {
+      line.removeChild(existingCheckbox);
+      line.classList.remove('strikethrough');
+    }
+    if (existingNumber) {
+      line.removeChild(existingNumber);
+    }
+
+    // Add bullet
+    const bulletSpan = document.createElement('span');
+    bulletSpan.textContent = '•';
+    bulletSpan.style.marginRight = '8px';
+    bulletSpan.style.fontSize = '16px';
+    bulletSpan.className = 'bullet-marker';
+    line.insertBefore(bulletSpan, line.firstChild);
+  }
+
+  active.focus();
+}
+
+   function createCheckboxWrapper(line, isChecked) {
+      const checkboxWrapper = document.createElement('label');
+      checkboxWrapper.className = 'checkbox-wrapper';
+
+      const checkbox = document.createElement('input');
+      checkbox.type = 'checkbox';
+      checkbox.checked = isChecked;
+
+      const customBox = document.createElement('span');
+      customBox.className = 'checkbox-custom';
+
+      if (isChecked) {
+        line.classList.add('strikethrough');
+      }
+
+      checkbox.addEventListener('change', () => {
+  line.classList.toggle('strikethrough', checkbox.checked);
+
+  // ✅ Refocus input after checking so keyboard stays open
+const input = line.querySelector('textarea');
+  if (input) {
+    input.focus();
+     input.setSelectionRange(input.value.length, input.value.length);
+  }
+    saveToAndroid();
+
+});
+
+      checkboxWrapper.appendChild(checkbox);
+      checkboxWrapper.appendChild(customBox);
+      return checkboxWrapper;
+    }
+
+    function toggleCheckboxOnCurrentLine() {
+  const active = document.activeElement;
+  if (!active || active.tagName !== 'TEXTAREA') return;
+
+  const line = active.closest('.line');
+  if (!line) return;
+
+  const existingCheckbox = line.querySelector('.checkbox-wrapper');
+  const existingBullet = line.querySelector('.bullet-marker');
+  const existingNumber = line.querySelector('.number-marker');
+
+  if (existingCheckbox) {
+    line.removeChild(existingCheckbox);
+    line.classList.remove('strikethrough');
+  } else {
+    // Remove bullet or number
+    if (existingBullet) {
+      line.removeChild(existingBullet);
+    }
+    if (existingNumber) {
+      line.removeChild(existingNumber);
+    }
+
+    // Add checkbox
+    const wrapper = createCheckboxWrapper(line, false);
+    line.insertBefore(wrapper, line.firstChild);
+  }
+
+  active.focus();
+}
+
+
+
+
+
+function toggleNumberedItemOnCurrentLine() {
+  const active = document.activeElement;
+  if (!active || active.tagName !== 'TEXTAREA') return;
+
+  const line = active.closest('.line');
+  if (!line) return;
+
+  const existingNumber = line.querySelector('.number-marker');
+  const existingBullet = line.querySelector('.bullet-marker');
+  const existingCheckbox = line.querySelector('.checkbox-wrapper');
+
+  if (existingNumber) {
+    line.removeChild(existingNumber);
+  } else {
+    // Remove bullet or checkbox
+    if (existingBullet) {
+      line.removeChild(existingBullet);
+    }
+    if (existingCheckbox) {
+      line.removeChild(existingCheckbox);
+      line.classList.remove('strikethrough');
+    }
+
+    // Count consecutive numbered lines above
+    const allLines = Array.from(document.querySelectorAll('.line'));
+    const index = allLines.indexOf(line);
+    let count = 0;
+    for (let i = index - 1; i >= 0; i--) {
+      const prev = allLines[i];
+      if (prev.querySelector('.bullet-marker') || prev.querySelector('.checkbox-wrapper')) break;
+      if (prev.querySelector('.number-marker')) count++;
+      else break;
+    }
+
+    const numberSpan = document.createElement('span');
+    numberSpan.textContent = `${count + 1}.`;
+    numberSpan.style.marginRight = '8px';
+    numberSpan.style.fontSize = '16px';
+    numberSpan.className = 'number-marker';
+    line.insertBefore(numberSpan, line.firstChild);
+  }
+    setTimeout(renumberAllNumberedLines, 0);
+
+
+  active.focus();
+}
+
+function renumberAllNumberedLines() {
+  const lines = Array.from(document.querySelectorAll('.line'));
+  let numberCounter = 1;
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    const numberMarker = line.querySelector('.number-marker');
+    const bulletMarker = line.querySelector('.bullet-marker');
+    const checkbox = line.querySelector('.checkbox-wrapper');
+
+    if (numberMarker) {
+      numberMarker.textContent = `${numberCounter}.`;
+      numberCounter++;
+    } else if (bulletMarker || checkbox) {
+      // Interrupts numbering sequence
+      numberCounter = 1;
+    } else {
+      // Plain text line, also resets numbering
+      numberCounter = 1;
+    }
+  }
+}
+
+
+ function getChecklistData() {
+  const lines = document.querySelectorAll('.line');
+  let result = '';
+  lines.forEach(line => {
+    const checkbox = line.querySelector('input[type="checkbox"]');
+    const input = line.querySelector('textarea');
+    const bullet = line.querySelector('.bullet-marker');
+    const number = line.querySelector('.number-marker');
+    const img = line.querySelector('img');
+
+    if (img) {
+      result += `[img] ${img.src}\n`; // ✅ Save image as base64
+      return;
+    }
+
+
+
+    if (!input || !input.value.trim()) return;
+
+    if (checkbox) {
+      const prefix = checkbox.checked ? '[x] ' : '[ ] ';
+      result += prefix + input.value.trim() + '\n';
+    } else if (bullet) {
+      result += '• ' + input.value.trim() + '\n';
+      } else if (number) {
+      result += number.textContent + ' ' + input.value.trim() + '\n';
+    } else {
+      result += input.value.trim() + '\n';
+    }
+  });
+  return result.trim();
+}
+
+
+    function loadChecklistFromDescription(desc) {
+  const lines = desc.split('\n');
+  const checklist = document.getElementById('checklist');
+  checklist.innerHTML = '';
+
+
+  let validLineAdded = false;
+
+  lines.forEach(line => {
+    const trimmed = line.trim();
+    if (trimmed.startsWith('[img]')) {
+      const base64Str = trimmed.substring(5).trim();
+      insertImageFromBase64(base64Str);
+      validLineAdded = true;
+    } else if (trimmed.startsWith('[x]')) {
+      addLine(trimmed.substring(3).trim(), true, true);
+      validLineAdded = true;
+    } else if (trimmed.startsWith('[ ]')) {
+      addLine(trimmed.substring(3).trim(), true, false);
+      validLineAdded = true;
+    } else if (trimmed.startsWith('•')) {
+      addLine(trimmed.substring(1).trim(), false, false, true);
+      validLineAdded = true;
+    } else if (/^\d+\./.test(trimmed)) {
+      const text = trimmed.replace(/^\d+\.\s*/, '');
+      addLine(text, false, false, false, true);
+      validLineAdded = true;
+    } else if (trimmed.length > 0) {
+      addLine(trimmed, false, false);
+      validLineAdded = true;
+    }
+  });
+
+  if (!validLineAdded) {
+    addLine();
+  }
+
+  window.checklistLoaded = true;
+
+
+
+  setTimeout(() => {
+    const checklist = document.getElementById('checklist');
+const lastLine = checklist.lastElementChild;
+if (lastLine) {
+  lastLine.scrollIntoView({ behavior: 'smooth', block: 'end' });
+}
+
+    // Also focus last textarea
+    const lastInput = checklist.querySelectorAll('textarea');
+    if (lastInput.length > 0) {
+      const input = lastInput[lastInput.length - 1];
+      input.focus();
+      input.setSelectionRange(input.value.length, input.value.length);
+    }
+  }, 50); // delay ensures DOM is ready
+}
+
+window.onbeforeunload = function () {
+  if (window.Android && Android.saveChecklist) {
+    Android.saveChecklist(getChecklistData());
+  }
+};
+
+window.onload = () => {
+  window.webviewReady = true;
+
+  // If Android doesn't load anything, fallback to empty checklist
+  setTimeout(() => {
+    if (!window.checklistLoaded) {
+      loadEmptyChecklist();
+    }
+  }, 100); // Wait briefly in case Android loads something
+};
+
+function loadEmptyChecklist() {
+  const checklist = document.getElementById('checklist');
+  checklist.innerHTML = '';
+
+  addLine(); // Add 1 blank line
+
+  // ✅ Focus the textarea
+  const firstInput = checklist.querySelector('textarea');
+  if (firstInput) {
+    firstInput.focus();
+    firstInput.setSelectionRange(firstInput.value.length, firstInput.value.length);
+  }
+  scrollToBottom();
+
+
+  window.checklistLoaded = true;
+}
+
+function insertImageFromBase64(base64Str) {
+  const container = document.getElementById('checklist');
+
+  const line = document.createElement('div');
+  line.className = 'line';
+
+  const wrapper = document.createElement('div');
+  wrapper.className = 'resizable-image-wrapper';
+
+  const img = document.createElement('img');
+  img.src = base64Str;
+  img.style.width = "60%";
+  img.style.display = "block";
+  img.style.margin = "8px auto";
+  img.style.borderRadius = "8px";
+  img.style.boxShadow = "0 2px 6px rgba(0,0,0,0.2)";
+  img.style.maxHeight = "250px";
+  img.style.objectFit = "cover";
+
+  line.appendChild(img);
+  container.appendChild(line);
+
+  scrollToBottom();
+    addLine();
+
+}
+
+
+
+
+
+
+    // ✅ Let Android call this to insert a checkbox at current line
+    window.insertCheckbox = toggleCheckboxOnCurrentLine;
+    window.insertBulletPoint = toggleBulletOnCurrentLine;
+    window.insertNumberedItem = toggleNumberedItemOnCurrentLine;
+
+
+    function saveToAndroid() {
+  if (window.Android && Android.saveChecklist) {
+    Android.saveChecklist(getChecklistData());
+  }
+}
+    window.isChecklistReady = function () {
+  return !!window.checklistLoaded;
+};
+
+    function scrollToBottom() {
+  const checklist = document.getElementById('checklist');
+  checklist.scrollTop = checklist.scrollHeight;
+}
+
+</script>
+</body>
+</html>

@@ -1,12 +1,10 @@
-package com.example.notesapp.util
+package com.example.notesapp.common
 
 import android.app.Activity
 import android.content.Intent
 import android.graphics.Typeface
-import com.example.notesapp.SearchActivity
-import com.example.notesapp.common.PopupMenuWindow
-import com.example.notesapp.common.SortBottomSheet
-import com.example.notesapp.common.ViewMode
+import com.example.notesapp.search.SearchActivity
+import com.example.notesapp.common.bottomsheet.SortBottomSheet
 import com.example.notesapp.databinding.ToolBarLayoutBinding
 import com.example.notesapp.note.NoteViewModel
 

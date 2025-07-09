@@ -1,6 +1,5 @@
-package com.example.notesapp
+package com.example.notesapp.search
 
-import android.content.Context
 import android.content.Intent
 import android.os.Bundle
 import android.util.Log
@@ -10,12 +9,12 @@ import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.widget.doOnTextChanged
 import androidx.recyclerview.widget.LinearLayoutManager
-import com.example.notesapp.folder.FolderWithInfoAdapter
-import com.example.notesapp.note.NoteAdapter
 import com.example.notesapp.databinding.ActivitySearchBinding
-import com.example.notesapp.folder.FolderActivity
-import com.example.notesapp.folder.FolderViewModel
+import com.example.notesapp.folder.ui.FolderActivity
+import com.example.notesapp.folder.data.FolderViewModel
+import com.example.notesapp.folder.adapter.FolderWithInfoAdapter
 import com.example.notesapp.note.AddNoteActivity
+import com.example.notesapp.note.NoteAdapter
 import com.example.notesapp.note.NoteViewModel
 
 class SearchActivity : AppCompatActivity() {
@@ -41,7 +40,7 @@ class SearchActivity : AppCompatActivity() {
     private fun setupSearchBar() {
         binding.etSearch.requestFocus()
         binding.etSearch.postDelayed({
-            val imm = getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
+            val imm = getSystemService(INPUT_METHOD_SERVICE) as InputMethodManager
             imm.showSoftInput(binding.etSearch, InputMethodManager.SHOW_IMPLICIT)
         }, 100)
     }
@@ -82,7 +81,10 @@ class SearchActivity : AppCompatActivity() {
 
                 folderViewModel.searchFolderSummaries(query).observe(this) { folders ->
                     folders.forEach {
-                        Log.d("FolderQueryDebug", "Folder: ${it.folder.name}, Subfolders: ${it.subfolderCount}, Notes: ${it.noteCount}")
+                        Log.d(
+                            "FolderQueryDebug",
+                            "Folder: ${it.folder.name}, Subfolders: ${it.subfolderCount}, Notes: ${it.noteCount}"
+                        )
                     }
                     folderWithInfoAdapter.updateFolders(folders)
                     binding.tvFolders.visibility = if (folders.isEmpty()) View.GONE else View.VISIBLE
@@ -118,16 +120,13 @@ class SearchActivity : AppCompatActivity() {
 
     private fun setupCancelButton() {
         binding.btnCancel.setOnClickListener {
-            val imm = getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
+            val imm = getSystemService(INPUT_METHOD_SERVICE) as InputMethodManager
             imm.hideSoftInputFromWindow(binding.etSearch.windowToken, 0)
             finish()
         }
     }
 
-    private fun openSubFolder(folderId: Int, name: String) {
-        startActivity(Intent(this, FolderActivity::class.java).apply {
-            putExtra("folder_id", folderId)
-            putExtra("folder_name", name)
-        })
+    private fun openSubFolder(folderId: Int, folderName: String) {
+        FolderActivity.start(this, folderId, folderName)
     }
 }

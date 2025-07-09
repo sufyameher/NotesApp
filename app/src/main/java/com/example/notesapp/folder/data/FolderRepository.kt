@@ -1,7 +1,8 @@
-package com.example.notesapp.folder
+package com.example.notesapp.folder.data
 
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.map
+import com.example.notesapp.folder.model.FolderWithNoteCount
 
 class FolderRepository(private val folderDao: FolderDao) {
 

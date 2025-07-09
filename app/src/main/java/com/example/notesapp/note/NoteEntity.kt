@@ -8,12 +8,10 @@ data class NoteEntity(
     @PrimaryKey(autoGenerate = true)
     val id: Int = 0,
     val title: String,
-    val description: String,
+    val description: String? = null,
     val createdDate: Long = System.currentTimeMillis(),
     val modifiedDate: Long = System.currentTimeMillis(),
     val folderId: Int? = null,
     val isEdited: Boolean = false,
-    val isDeleted: Boolean = false
-
-
-)
+    val isDeleted: Boolean = false,
+    val imageUris: List<String>? = emptyList())

@@ -1,9 +1,13 @@
-package com.example.notesapp.folder
+package com.example.notesapp.folder.data
 
 import android.app.Application
 import android.util.Log
-import androidx.lifecycle.*
+import androidx.lifecycle.AndroidViewModel
+import androidx.lifecycle.LiveData
+import androidx.lifecycle.MutableLiveData
+import androidx.lifecycle.viewModelScope
 import com.example.notesapp.db.AppDatabase
+import com.example.notesapp.folder.model.FolderWithNoteCount
 import com.example.notesapp.note.NoteRepository
 import kotlinx.coroutines.launch
 
@@ -134,4 +138,3 @@ class FolderViewModel(application: Application) : AndroidViewModel(application) 
 
 
 }
-
