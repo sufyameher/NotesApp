@@ -1,0 +1,18 @@
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <!-- Top border: light gray, exactly 1dp -->
+    <item android:top="1dp">
+        <shape>
+            <size android:height="0.5dp"/>
+            <solid android:color="#F1F1F1"/>
+        </shape>
+    </item>
+
+    <!-- Rest: full white background starting from 1dp below -->
+    <item android:top="2dp">
+        <shape>
+            <solid android:color="@android:color/white"/>
+        </shape>
+    </item>
+
+</layer-list>

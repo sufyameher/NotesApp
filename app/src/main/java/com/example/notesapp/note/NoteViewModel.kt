@@ -95,4 +95,29 @@ class NoteViewModel(application: Application) : AndroidViewModel(application) {
             noteRepository.insert(it.copy(id = 0, folderId = toFolderId))
         }
     }
+
+    fun saveOrUpdateNote(
+        title: String,
+        desc: String,
+        folderId: Int?,
+        existing: NoteEntity?
+    ) {
+        val now = System.currentTimeMillis()
+        val finalTitle = if (desc.isNotEmpty()) "$title." else title
+
+        val note = existing?.copy(
+            title = finalTitle,
+            description = desc,
+            modifiedDate = now
+        ) ?: NoteEntity(
+            title = title,
+            description = desc,
+            createdDate = now,
+            modifiedDate = now,
+            folderId = folderId
+        )
+
+        if (existing != null) update(note) else insert(note)
+    }
+
 }

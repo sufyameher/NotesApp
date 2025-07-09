@@ -1,4 +1,4 @@
-package com.example.notesapp.folder
+package com.example.notesapp.folder.adapter
 
 import android.util.Log
 import android.view.LayoutInflater
@@ -6,6 +6,7 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.recyclerview.widget.RecyclerView
 import com.example.notesapp.databinding.ItemFolderWithInfoBinding
+import com.example.notesapp.folder.model.FolderWithNoteCount
 
 class FolderWithInfoAdapter(
     private var folders: List<FolderWithNoteCount>,
@@ -14,7 +15,8 @@ class FolderWithInfoAdapter(
 ) : RecyclerView.Adapter<FolderWithInfoAdapter.ViewHolder>() {
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
-        val binding = ItemFolderWithInfoBinding.inflate(LayoutInflater.from(parent.context), parent, false)
+        val binding =
+            ItemFolderWithInfoBinding.inflate(LayoutInflater.from(parent.context), parent, false)
         return ViewHolder(binding)
     }
 
@@ -30,10 +32,6 @@ class FolderWithInfoAdapter(
 
         fun bind(item: FolderWithNoteCount) = with(binding) {
             val (folder, subfolderCount, noteCount) = item
-
-            Log.d("FolderDebug", "Folder: ${folder.name}, Subfolders: $subfolderCount, Notes: $noteCount")
-
-
             tvFolderName.text = folder.name
 
             val info = when {

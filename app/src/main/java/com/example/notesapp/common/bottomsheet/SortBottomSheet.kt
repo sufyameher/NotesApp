@@ -1,4 +1,4 @@
-package com.example.notesapp.common
+package com.example.notesapp.common.bottomsheet
 
 import android.os.Bundle
 import android.view.LayoutInflater

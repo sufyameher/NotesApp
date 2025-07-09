@@ -1,4 +1,4 @@
-package com.example.notesapp.common
+package com.example.notesapp.note
 
 import android.os.Bundle
 import android.view.LayoutInflater
@@ -6,7 +6,6 @@ import android.view.View
 import android.view.ViewGroup
 import com.example.notesapp.common.Helper.formatDate
 import com.example.notesapp.databinding.BottomSheetNoteActionsBinding
-import com.example.notesapp.note.NoteEntity
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
 
 class NoteActionBottomSheet(

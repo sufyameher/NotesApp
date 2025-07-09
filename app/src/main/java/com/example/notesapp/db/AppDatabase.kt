@@ -1,11 +1,13 @@
 package com.example.notesapp.db
 
 import android.content.Context
+import androidx.databinding.adapters.Converters
 import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
-import com.example.notesapp.folder.FolderDao
-import com.example.notesapp.folder.FolderEntity
+import androidx.room.TypeConverters
+import com.example.notesapp.folder.data.FolderDao
+import com.example.notesapp.folder.data.FolderEntity
 import com.example.notesapp.note.NoteDao
 import com.example.notesapp.note.NoteEntity
 
@@ -13,14 +15,14 @@ import com.example.notesapp.note.NoteEntity
     entities = [
         NoteEntity::class,
         FolderEntity::class
-               ],
-    version = 10
-
+    ],
+    version = 12
 )
+@TypeConverters(RoomConverters::class)
 abstract class AppDatabase : RoomDatabase() {
+
     abstract fun noteDao(): NoteDao
     abstract fun folderDao(): FolderDao
-
 
     companion object {
         @Volatile
