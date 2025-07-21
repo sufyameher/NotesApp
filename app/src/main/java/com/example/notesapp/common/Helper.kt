@@ -10,11 +10,17 @@ import android.view.inputmethod.InputMethodManager
 import android.widget.Toast
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
+import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.LiveData
+import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import com.example.notesapp.databinding.FolderActivityBinding
 import com.example.notesapp.folder.data.FolderEntity
 import com.example.notesapp.note.NoteEntity
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -23,6 +29,18 @@ object Helper {
     fun View.updateSpacerVisibility(folders: List<FolderEntity>, notes: List<NoteEntity>) {
         // ✅ Visible only if BOTH folders AND notes exist
         visibility = if (folders.isNotEmpty() && notes.isNotEmpty()) View.VISIBLE else View.GONE
+    }
+
+    fun <T> LifecycleOwner.observeFlow(
+        flow: Flow<T>,
+        minActiveState: Lifecycle.State = Lifecycle.State.STARTED,
+        onEach: (T) -> Unit
+    ) {
+        lifecycleScope.launch {
+            repeatOnLifecycle(minActiveState) {
+                flow.collect { onEach(it) }
+            }
+        }
     }
 
     fun updateSectionVisibility(

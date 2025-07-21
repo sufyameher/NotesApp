@@ -111,7 +111,7 @@ class TrashActivity : AppCompatActivity() {
             titleText = "Move to",
             ) { targetFolder ->
             val movedNote = selectedNote.copy(
-                folderId = targetFolder?.id,
+                folderId = targetFolder?.id ?: 0,
                 isDeleted = false
             )
             noteViewModel.update(movedNote)

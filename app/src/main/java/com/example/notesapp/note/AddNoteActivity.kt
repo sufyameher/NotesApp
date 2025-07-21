@@ -20,7 +20,7 @@ class AddNoteActivity : AppCompatActivity() {
     private val viewModel: NoteViewModel by viewModels()
     private var noteId: Int? = null
     private var existingNote: NoteEntity? = null
-    private var folderId: Int? = null
+    private var folderId: Int = 0
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -38,7 +38,7 @@ class AddNoteActivity : AppCompatActivity() {
 
     private fun initIntentData() {
         noteId = intent.getIntExtra("note_id", -1).takeIf { it != -1 }
-        folderId = intent.getIntExtra("folder_id", -1).takeIf { it != -1 }
+        folderId = intent.getIntExtra("folder_id", 0).takeIf { it != -1 }!!
     }
 
     private fun setupWebView() = with(binding.webView) {

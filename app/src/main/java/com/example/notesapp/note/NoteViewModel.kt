@@ -1,13 +1,18 @@
 package com.example.notesapp.note
 
 import android.app.Application
+import android.util.Log
 import androidx.lifecycle.*
+import com.example.notesapp.common.PreferenceUtil
 import com.example.notesapp.common.ViewMode
 import com.example.notesapp.db.AppDatabase
 import kotlinx.coroutines.launch
 
 class NoteViewModel(application: Application) : AndroidViewModel(application) {
     private val noteRepository = NoteRepository(AppDatabase.getInstance(application).noteDao())
+
+    val viewMode: MutableLiveData<ViewMode> = MutableLiveData(PreferenceUtil.viewMode)
+    val folderSortedNotes: MutableLiveData<List<NoteEntity>> = MutableLiveData()
 
     val viewMode: MutableLiveData<ViewMode> = MutableLiveData(ViewMode.LIST)
     val allNotes: MutableLiveData<List<NoteEntity>> = MutableLiveData()

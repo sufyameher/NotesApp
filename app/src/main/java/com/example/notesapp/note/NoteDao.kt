@@ -60,16 +60,25 @@ interface NoteDao {
     @Query("SELECT * FROM note WHERE isDeleted = 0 ORDER BY title COLLATE NOCASE DESC")
     fun getNotesSortedByTitleDesc(): LiveData<List<NoteEntity>>
 
-     @Query("""
+    @Query("SELECT * FROM note ORDER BY isPinned DESC, createdDate DESC")
+    fun getAllNotesSorted(): LiveData<List<NoteEntity>>
+
+    @Query("SELECT * FROM note WHERE folderId IS NULL AND isDeleted = 0 ORDER BY isPinned DESC, modifiedDate DESC")
+    fun getRootNotes(): LiveData<List<NoteEntity>>
+
+
+    @Query("""
         SELECT * FROM note 
         WHERE isDeleted = 0 AND folderId = :folderId 
         ORDER BY 
-            CASE WHEN :sortBy = 'TITLE' AND :order = 'ASC' THEN title END COLLATE NOCASE ASC,
+            isPinned DESC,
+
+            CASE WHEN :sortBy = 'TITLE' AND :order = 'ASCENDING' THEN title END COLLATE NOCASE ASC,
             CASE WHEN :sortBy = 'TITLE' AND :order = 'DESC' THEN title END COLLATE NOCASE DESC,
-            CASE WHEN :sortBy = 'DATE_CREATED' AND :order = 'ASC' THEN createdDate END ASC,
-            CASE WHEN :sortBy = 'DATE_CREATED' AND :order = 'DESC' THEN createdDate END DESC,
-            CASE WHEN :sortBy = 'DATE_EDITED' AND :order = 'ASC' THEN modifiedDate END ASC,
-            CASE WHEN :sortBy = 'DATE_EDITED' AND :order = 'DESC' THEN modifiedDate END DESC
+            CASE WHEN :sortBy = 'DATE_CREATED' AND :order = 'ASCENDING' THEN createdDate END ASC,
+            CASE WHEN :sortBy = 'DATE_CREATED' AND :order = 'DESCENDING' THEN createdDate END DESC,
+            CASE WHEN :sortBy = 'DATE_EDITED' AND :order = 'ASCENDING' THEN modifiedDate END ASC,
+            CASE WHEN :sortBy = 'DATE_EDITED' AND :order = 'DESCENDING' THEN modifiedDate END DESC
     """)
     suspend fun getSortedNotesByFolderId(folderId: Int, sortBy: String, order: String): List<NoteEntity>
 

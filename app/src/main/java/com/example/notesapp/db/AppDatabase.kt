@@ -16,7 +16,7 @@ import com.example.notesapp.note.NoteEntity
         NoteEntity::class,
         FolderEntity::class
     ],
-    version = 12
+    version = 1
 )
 @TypeConverters(RoomConverters::class)
 abstract class AppDatabase : RoomDatabase() {

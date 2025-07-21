@@ -18,6 +18,7 @@ class NoteRepository(private val noteDao: NoteDao) {
 
     suspend fun insert(note: NoteEntity) = noteDao.insert(note)
     suspend fun update(note: NoteEntity) = noteDao.update(note)
+    suspend fun delete(note: NoteEntity) = noteDao.delete(note)
 
     fun getNoteByIdLive(id: Int): LiveData<NoteEntity> {
         return noteDao.getNoteByIdLive(id)
@@ -49,10 +50,6 @@ class NoteRepository(private val noteDao: NoteDao) {
 
     suspend fun permanentlyDeleteDeletedNotes(note: NoteEntity) {
         noteDao.delete(note)
-    }
-
-    suspend fun permanentlyDeleteAllDeletedNotes() {
-        noteDao.deleteAllDeletedNotes()
     }
 
     suspend fun getSortedNotesByFolderId(folderId: Int, sortBy: String, order: String): List<NoteEntity> {

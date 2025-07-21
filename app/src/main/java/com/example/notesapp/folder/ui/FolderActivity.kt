@@ -6,7 +6,6 @@ import android.content.Intent
 import com.example.notesapp.common.Helper
 import android.graphics.Typeface
 import android.os.Bundle
-import android.util.Log
 import android.view.View
 import android.view.inputmethod.EditorInfo
 import android.view.inputmethod.InputMethodManager

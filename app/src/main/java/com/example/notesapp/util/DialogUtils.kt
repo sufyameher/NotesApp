@@ -373,7 +373,7 @@ fun showNoteActions(
                     titleText = "Move to",
                     startFromFolder = currentFolder // ✅ this makes breadcrumb correct
                 ) { targetFolder ->
-                    val updatedNote = selectedNote.copy(folderId = targetFolder?.id)
+                    val updatedNote = selectedNote.copy(folderId = targetFolder?.id ?: 0)
                     onNoteUpdated(updatedNote)
                     context.toast("Note moved to '${targetFolder?.name}'")
                 }
@@ -386,7 +386,7 @@ fun showNoteActions(
                 val availableFolders = folders.filter { it.id != currentFolderId }
 
                 if (availableFolders.isEmpty()) {
-                    Toast.makeText(context, "No folders available to copy", Toast.LENGTH_SHORT).show()
+                    context.toast("No folders available to copy")
                     return@getFolders
                 }
 

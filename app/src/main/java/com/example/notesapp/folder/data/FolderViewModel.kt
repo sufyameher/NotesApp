@@ -71,32 +71,37 @@ class FolderViewModel(application: Application) : AndroidViewModel(application) 
         return folderRepository.getFolderInfo(folderId)
     }
 
-    fun moveNotesBetweenFolders(fromFolderId: Int, toFolderId: Int) = viewModelScope.launch {
-        val notes = noteRepository.getNotesByFolderIdRaw(fromFolderId)
-        Log.d("FolderMove", "Moving ${notes.size} notes from $fromFolderId to $toFolderId")
-
-        notes.forEach { note ->
-            val updatedNote = note.copy(folderId = toFolderId)
-            Log.d("FolderMove", "Note ID ${note.id} -> folderId ${updatedNote.folderId}")
-            noteRepository.update(updatedNote)
-        }
+    fun getFolderLive(folderId: Int): LiveData<FolderEntity?> {
+        return folderRepository.getFolderLive(folderId)
     }
 
-    fun copyAllNotesFromFolderTo(fromFolderId: Int, toFolderId: Int) = viewModelScope.launch {
-        val notes = noteRepository.getNotesByFolderIdRaw(fromFolderId)
-        notes.forEach { note ->
-            val copied = note.copy(id = 0, folderId = toFolderId)
-            noteRepository.insert(copied)
-        }
-    }
+
+//    fun moveNotesBetweenFolders(fromFolderId: Int, toFolderId: Int) = viewModelScope.launch {
+//        val notes = noteRepository.getNotesByFolderIdRaw(fromFolderId)
+//        Log.d("FolderMove", "Moving ${notes.size} notes from $fromFolderId to $toFolderId")
+//
+//        notes.forEach { note ->
+//            val updatedNote = note.copy(folderId = toFolderId)
+//            Log.d("FolderMove", "Note ID ${note.id} -> folderId ${updatedNote.folderId}")
+//            noteRepository.update(updatedNote)
+//        }
+//    }
+
+//    fun copyAllNotesFromFolderTo(fromFolderId: Int, toFolderId: Int) = viewModelScope.launch {
+//        val notes = noteRepository.getNotesByFolderIdRaw(fromFolderId)
+//        notes.forEach { note ->
+//            val copied = note.copy(id = 0, folderId = toFolderId)
+//            noteRepository.insert(copied)
+//        }
+//    }
 
     fun searchFolderSummaries(query: String): LiveData<List<FolderWithNoteCount>> {
         return folderRepository.searchFolderSummaries(query)
     }
 
-    fun searchFolders(query: String): LiveData<List<FolderEntity>> {
-        return folderRepository.searchFolders(query)
-    }
+//    fun searchFolders(query: String): LiveData<List<FolderEntity>> {
+//        return folderRepository.searchFolders(query)
+//    }
 
     fun copyFolderWithContents(
         sourceFolder: FolderEntity,
