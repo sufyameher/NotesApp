@@ -3,48 +3,86 @@ package com.example.notesapp.note
 import android.app.Application
 import android.util.Log
 import androidx.lifecycle.*
+import com.example.notesapp.common.LiveDataHost
+import com.example.notesapp.common.LiveDataHostNullable
 import com.example.notesapp.common.PreferenceUtil
 import com.example.notesapp.common.ViewMode
 import com.example.notesapp.db.AppDatabase
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
+import timber.log.Timber
 
 class NoteViewModel(application: Application) : AndroidViewModel(application) {
     private val noteRepository = NoteRepository(AppDatabase.getInstance(application).noteDao())
 
     val viewMode: MutableLiveData<ViewMode> = MutableLiveData(PreferenceUtil.viewMode)
-    val folderSortedNotes: MutableLiveData<List<NoteEntity>> = MutableLiveData()
 
-    val viewMode: MutableLiveData<ViewMode> = MutableLiveData(ViewMode.LIST)
-    val allNotes: MutableLiveData<List<NoteEntity>> = MutableLiveData()
-    val folderSortedNotes: MutableLiveData<List<NoteEntity>> = MutableLiveData()
+    val folderSortedNotes = LiveDataHost(viewModelScope, emptyList<NoteEntity>())
 
-    val deletedNotes: LiveData<List<NoteEntity>> = noteRepository.getDeletedNotes()
-    val activeNotes: LiveData<List<NoteEntity>> = noteRepository.allNotes
+    val noteById = LiveDataHostNullable<NoteEntity>(viewModelScope)
+    val searchResults = LiveDataHost(viewModelScope, emptyList<NoteEntity>())
+    val folderNotes = LiveDataHost(viewModelScope, emptyList<NoteEntity>())
+
+    val allNotesSorted = LiveDataHost(viewModelScope, emptyList<NoteEntity>())
+    private val _activeNotes = MutableStateFlow<List<NoteEntity>>(emptyList())
+    val activeNotesFlow: StateFlow<List<NoteEntity>> = _activeNotes
+
+    private var currentSortBy: String = "DATE_CREATED"
+    private var currentSortOrder: String = "DESC"
+    private var currentFolderId: Int = -1
+
+    val rootFolderId = 0
 
     init {
-        sortNotes("DATE_CREATED", "DESC")
+        allNotesSorted(noteRepository.getAllNotesSortedFlow())
+        sortNotes(rootFolderId, currentSortBy, currentSortOrder)
     }
 
-    fun setViewMode(mode: ViewMode) {
-        viewMode.value = mode
-    }
+    fun sortNotes(folderId: Int, sortBy: String, order: String) {
+        currentSortBy = sortBy
+        currentSortOrder = order
+        currentFolderId = folderId
 
-    fun sortNotes(sortBy: String, order: String) {
-        noteRepository.getSortedNotes(sortBy, order).observeForever { sorted ->
-            allNotes.value = sorted
+        viewModelScope.launch {
+            noteRepository.getSortedNotesFlow(folderId, sortBy, order)
+                .collect { sortedNotes ->
+                    _activeNotes.value = sortedNotes
+                }
         }
     }
 
     fun sortNotesInFolder(folderId: Int, sortBy: String, order: String) {
+        currentSortBy = sortBy
+        currentSortOrder = order
+        currentFolderId = folderId
+
         viewModelScope.launch {
-            val sorted = noteRepository.getSortedNotesByFolderId(folderId, sortBy, order)
-            folderSortedNotes.postValue(sorted)
+            val sorted = noteRepository.getSortedNotesByFolderIdFlow(folderId, sortBy, order)
+            folderSortedNotes(sorted)
         }
+    }
+
+    fun togglePin(note: NoteEntity) = viewModelScope.launch {
+        val pinnedNote = note.copy(
+            isPinned = !note.isPinned,
+        )
+        Timber.d("Toggling pin: ${note.title} ${pinnedNote.isPinned}")
+
+        noteRepository.update(pinnedNote)
+        if (currentFolderId != -1) {
+            sortNotesInFolder(currentFolderId, currentSortBy, currentSortOrder)
+        }
+    }
+
+    fun setViewMode(mode: ViewMode) {
+        viewMode.value = mode
+        PreferenceUtil.viewMode = mode
     }
 
     fun insert(note: NoteEntity) = viewModelScope.launch {
         noteRepository.insert(note)
-        sortNotes("DATE_CREATED", "DESC")
+        sortNotes(note.folderId, "DATE_CREATED", "DESC")
     }
 
     fun update(note: NoteEntity) = viewModelScope.launch {
@@ -55,56 +93,30 @@ class NoteViewModel(application: Application) : AndroidViewModel(application) {
             isEdited = isEdited
         )
         noteRepository.update(updated)
-        sortNotes("DATE_MODIFIED", "DESC")
+        refreshFolderNotesOnUpdate(oldNote.folderId, note.folderId)
     }
 
     fun delete(note: NoteEntity) = viewModelScope.launch {
         noteRepository.delete(note)
-        sortNotes("DATE_CREATED", "DESC")
+        sortNotes(note.folderId, "DATE_CREATED", "DESC")
     }
 
-    fun permanentlyDelete(note: NoteEntity) = viewModelScope.launch {
-        noteRepository.permanentlyDeleteDeletedNotes(note)
+    fun getNoteById(id: Int) {
+        noteById(noteRepository.getNoteByIdLiveFlow(id))
     }
 
-    fun permanentlyDeleteAll() = viewModelScope.launch {
-        noteRepository.permanentlyDeleteAllDeletedNotes()
+    fun searchNotes(query: String) {
+        searchResults(noteRepository.searchNotesFlow(query))
     }
 
-    fun recover(note: NoteEntity) = viewModelScope.launch {
-        noteRepository.update(note.copy(isDeleted = false))
-    }
-
-    fun getNoteById(id: Int): LiveData<NoteEntity> {
-        return noteRepository.getNoteByIdLive(id)
-    }
-
-    fun searchNotes(query: String): LiveData<List<NoteEntity>> {
-        return noteRepository.searchNotes(query)
-    }
-
-    fun getNotesByFolderId(folderId: Int): LiveData<List<NoteEntity>> {
-        return noteRepository.getNotesByFolderId(folderId)
-    }
-
-    fun moveNoteToFolder(fromFolderId: Int, toFolderId: Int) = viewModelScope.launch {
-        val notes = noteRepository.getNotesByFolderIdRaw(fromFolderId)
-        notes.forEach {
-            noteRepository.update(it.copy(folderId = toFolderId))
-        }
-    }
-
-    fun copyAllNotesFromFolderTo(fromFolderId: Int, toFolderId: Int) = viewModelScope.launch {
-        val notes = noteRepository.getNotesByFolderIdRaw(fromFolderId)
-        notes.forEach {
-            noteRepository.insert(it.copy(id = 0, folderId = toFolderId))
-        }
+    fun getNotesByFolderId(folderId: Int) {
+        folderNotes(noteRepository.getNotesByFolderIdFlow(folderId))
     }
 
     fun saveOrUpdateNote(
         title: String,
         desc: String,
-        folderId: Int?,
+        folderId: Int,
         existing: NoteEntity?
     ) {
         val now = System.currentTimeMillis()
@@ -125,4 +137,10 @@ class NoteViewModel(application: Application) : AndroidViewModel(application) {
         if (existing != null) update(note) else insert(note)
     }
 
+    private fun refreshFolderNotesOnUpdate(oldFolderId: Int, newFolderId: Int) {
+        if (oldFolderId != newFolderId) {
+            sortNotes(oldFolderId, "DATE_MODIFIED", "DESC")
+        }
+        sortNotes(newFolderId, "DATE_MODIFIED", "DESC")
+    }
 }

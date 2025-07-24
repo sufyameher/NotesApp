@@ -1,7 +1,7 @@
 package com.example.notesapp.note
 
-import androidx.lifecycle.LiveData
-import androidx.room.*
+ import androidx.room.*
+import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface NoteDao {
@@ -22,71 +22,50 @@ interface NoteDao {
     suspend fun getNoteById(id: Int): NoteEntity
 
     @Query("SELECT * FROM note WHERE id = :id")
-    fun getNoteByIdLive(id: Int): LiveData<NoteEntity>
-
-    @Query("SELECT * FROM note ORDER BY id DESC")
-    fun getAllNotes(): LiveData<List<NoteEntity>>
-
-    @Query("SELECT * FROM note WHERE isDeleted = 0")
-    fun getAllNotesToDelete(): LiveData<List<NoteEntity>>
+    fun getNoteByIdLiveFlow(id: Int): Flow<NoteEntity>
 
     @Query("SELECT * FROM note WHERE isDeleted = 1")
-    fun getDeletedNotes(): LiveData<List<NoteEntity>>
+    fun getDeletedNotesFlow(): Flow<List<NoteEntity>>
 
-    @Query("SELECT * FROM note WHERE isDeleted = 0 ORDER BY modifiedDate DESC")
-    fun getActiveNotes(): LiveData<List<NoteEntity>>
+    @Query("SELECT * FROM note WHERE  folderId = :folderId AND isDeleted = 0 ORDER BY isPinned DESC, createdDate DESC")
+    fun getActiveNotesFlow(folderId: Int): Flow<List<NoteEntity>>
 
     @Query("SELECT * FROM note WHERE folderId = :folderId AND isDeleted = 0")
     suspend fun getNotesByFolderIdRaw(folderId: Int): List<NoteEntity>
 
-    @Query("SELECT * FROM note WHERE folderId = :folderId AND isDeleted = 0 ORDER BY modifiedDate DESC")
-    fun getNotesByFolderId(folderId: Int): LiveData<List<NoteEntity>>
-
-    @Query("SELECT * FROM note WHERE isDeleted = 0 ORDER BY createdDate DESC")
-    fun getNotesSortedByDateCreatedDesc(): LiveData<List<NoteEntity>>
-
-    @Query("SELECT * FROM note WHERE isDeleted = 0 ORDER BY createdDate ASC")
-    fun getNotesSortedByDateCreatedAsc(): LiveData<List<NoteEntity>>
-
-    @Query("SELECT * FROM note WHERE isDeleted = 0 ORDER BY modifiedDate DESC")
-    fun getNotesSortedByDateModifiedDesc(): LiveData<List<NoteEntity>>
-
-    @Query("SELECT * FROM note WHERE isDeleted = 0 ORDER BY modifiedDate ASC")
-    fun getNotesSortedByDateModifiedAsc(): LiveData<List<NoteEntity>>
-
-    @Query("SELECT * FROM note WHERE isDeleted = 0 ORDER BY title COLLATE NOCASE ASC")
-    fun getNotesSortedByTitleAsc(): LiveData<List<NoteEntity>>
-
-    @Query("SELECT * FROM note WHERE isDeleted = 0 ORDER BY title COLLATE NOCASE DESC")
-    fun getNotesSortedByTitleDesc(): LiveData<List<NoteEntity>>
+    @Query("SELECT * FROM note WHERE folderId = :folderId AND isDeleted = 0 ORDER BY isPinned DESC, createdDate DESC") // inner folder
+    fun getNotesByFolderIdFlow(folderId: Int): Flow<List<NoteEntity>>
 
     @Query("SELECT * FROM note ORDER BY isPinned DESC, createdDate DESC")
-    fun getAllNotesSorted(): LiveData<List<NoteEntity>>
+    fun getAllNotesSortedFlow(): Flow<List<NoteEntity>>
 
     @Query("SELECT * FROM note WHERE folderId IS NULL AND isDeleted = 0 ORDER BY isPinned DESC, modifiedDate DESC")
-    fun getRootNotes(): LiveData<List<NoteEntity>>
+    fun getRootNotesFlow(): Flow<List<NoteEntity>>
 
-
-    @Query("""
+    @Query(
+        """
         SELECT * FROM note 
         WHERE isDeleted = 0 AND folderId = :folderId 
         ORDER BY 
             isPinned DESC,
 
-            CASE WHEN :sortBy = 'TITLE' AND :order = 'ASCENDING' THEN title END COLLATE NOCASE ASC,
-            CASE WHEN :sortBy = 'TITLE' AND :order = 'DESC' THEN title END COLLATE NOCASE DESC,
+            CASE WHEN :sortBy = 'TITLE' AND :order = 'A - Z' THEN title END COLLATE NOCASE ASC,
+            CASE WHEN :sortBy = 'TITLE' AND :order = 'Z - A' THEN title END COLLATE NOCASE DESC,
             CASE WHEN :sortBy = 'DATE_CREATED' AND :order = 'ASCENDING' THEN createdDate END ASC,
             CASE WHEN :sortBy = 'DATE_CREATED' AND :order = 'DESCENDING' THEN createdDate END DESC,
             CASE WHEN :sortBy = 'DATE_EDITED' AND :order = 'ASCENDING' THEN modifiedDate END ASC,
             CASE WHEN :sortBy = 'DATE_EDITED' AND :order = 'DESCENDING' THEN modifiedDate END DESC
-    """)
-    suspend fun getSortedNotesByFolderId(folderId: Int, sortBy: String, order: String): List<NoteEntity>
+    """
+    )
+    fun getSortedNotesByFolderId(folderId: Int, sortBy: String, order: String): Flow<List<NoteEntity>>
 
-    @Query("""
+    @Query(
+        """
         SELECT * FROM note 
         WHERE title LIKE '%' || :query || '%' 
            OR description LIKE '%' || :query || '%' 
         ORDER BY modifiedDate DESC
-    """)
-    fun searchNotes(query: String): LiveData<List<NoteEntity>>
+    """
+    )
+    fun searchNotesFlow(query: String): Flow<List<NoteEntity>>
 }

@@ -368,7 +368,7 @@ fun showNoteActions(
                 showMoveConfirmDialog(
                     context = context,
                     inflater = LayoutInflater.from(context),
-                    folders = folders, // ✅ full list (not just availableFolders)
+                    folders = folders,
                     currentFolderId = currentFolderId ?: -1,
                     titleText = "Move to",
                     startFromFolder = currentFolder // ✅ this makes breadcrumb correct

@@ -27,8 +27,7 @@ import java.util.Locale
 
 object Helper {
     fun View.updateSpacerVisibility(folders: List<FolderEntity>, notes: List<NoteEntity>) {
-        // ✅ Visible only if BOTH folders AND notes exist
-        visibility = if (folders.isNotEmpty() && notes.isNotEmpty()) View.VISIBLE else View.GONE
+         visibility = if (folders.isNotEmpty() && notes.isNotEmpty()) View.VISIBLE else View.GONE
     }
 
     fun <T> LifecycleOwner.observeFlow(
@@ -49,7 +48,6 @@ object Helper {
         hasNotes: Boolean
     ) {
         binding.apply {
-            subfolderHeader.visibility = if (hasSubfolders) View.VISIBLE else View.GONE
             tvSubfolders.visibility = if (hasSubfolders) View.VISIBLE else View.GONE
             bottomSpacer.visibility = tvSubfolders.visibility
             tvNotes.visibility = if (hasNotes) View.VISIBLE else View.GONE
@@ -100,4 +98,22 @@ object Helper {
             ActivityCompat.requestPermissions(activity, arrayOf(permission), requestCode)
         }
     }
+
+    fun sortNotesList(
+        notes: List<NoteEntity>,
+        sortBy: String,
+        order: String
+    ): List<NoteEntity> {
+        val comparator = compareBy<NoteEntity> { it.isPinned.not() }.thenBy {
+            when (sortBy) {
+                "TITLE" -> it.title?.lowercase() ?: ""
+                "DATE_CREATED" -> it.createdDate
+                "DATE_EDITED" -> it.modifiedDate
+                else -> it.modifiedDate
+            }
+        }
+        return if (order == "DESCENDING" || order == "Z - A") notes.sortedWith(comparator.reversed())
+        else notes.sortedWith(comparator)
+    }
+
 }
