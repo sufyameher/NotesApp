@@ -13,11 +13,12 @@ import com.example.notesapp.common.Helper.hideKeyboard
 import com.example.notesapp.common.Helper.requestStoragePermissionIfNeeded
 import com.example.notesapp.databinding.ActivityAddNoteBinding
 import org.json.JSONObject
+import timber.log.Timber
 
 class AddNoteActivity : AppCompatActivity() {
 
     private val binding by lazy { ActivityAddNoteBinding.inflate(layoutInflater) }
-    private val viewModel: NoteViewModel by viewModels()
+    private val noteViewModel: NoteViewModel by viewModels()
     private var noteId: Int? = null
     private var existingNote: NoteEntity? = null
     private var folderId: Int = 0
@@ -84,11 +85,12 @@ class AddNoteActivity : AppCompatActivity() {
 
     private fun loadExistingNoteIfNeeded() {
         noteId?.let { id ->
-            viewModel.getNoteById(id).observe(this) { note ->
+            noteViewModel.getNoteById(id)
+            noteViewModel.noteById.observe(this) { note ->
                 note?.let {
                     existingNote = it
                     binding.etTitle.setText(it.title)
-                    Log.d("NoteDebug", "Loaded Note Desc: ${it.description}")
+                    Timber.d("Loaded Note Desc: ${it.description}")
                     it.description?.let { it1 -> waitForWebViewAndLoad(it1) }
                 }
             }
@@ -124,11 +126,11 @@ class AddNoteActivity : AppCompatActivity() {
             val isDescEmpty = desc.isBlank()
 
             if (!isTitleEmpty || !isDescEmpty) {
-                viewModel.saveOrUpdateNote(title, desc, folderId, existingNote)
+                noteViewModel.saveOrUpdateNote(title, desc, folderId, existingNote)
             } else if (existingNote == null) {
-                 Log.d("NoteDebug", "New empty note — not saving")
+                Timber.d("New empty note — not saving")
             } else {
-                 Log.d("NoteDebug", "Existing note left empty — skipping save")
+                Timber.d("Existing note left empty — skipping save")
             }
             onBackPressedDispatcher.onBackPressed()
         }

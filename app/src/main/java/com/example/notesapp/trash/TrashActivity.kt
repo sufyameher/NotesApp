@@ -17,6 +17,7 @@ class TrashActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityRecentlyDeletedBinding
     private val noteViewModel: NoteViewModel by viewModels()
+    private val trashViewModel: TrashViewModel by viewModels()
     private val folderViewModel: FolderViewModel by viewModels()
     private lateinit var adapter: NoteAdapter
 
@@ -81,14 +82,14 @@ class TrashActivity : AppCompatActivity() {
         TrashNoteActionBottomSheet(
             note = note,
             onRecover = {
-                noteViewModel.recover(it)
+                trashViewModel.recover(it)
                 toast("Note recovered")
             },
             onMoveTo = { selectedNote ->
                 handleMoveTo(selectedNote)
             },
             onDeleteForever = {
-                noteViewModel.permanentlyDelete(it)
+                trashViewModel.permanentlyDelete(it)
                 toast("Note deleted permanently")
             }
         ).show(supportFragmentManager, "DeletedNoteSheet")
@@ -121,7 +122,7 @@ class TrashActivity : AppCompatActivity() {
     }
 
     private fun observeDeletedNotes() {
-        noteViewModel.deletedNotes.observe(this) { notes ->
+        trashViewModel.deletedNotes.observe(this) { notes ->
             adapter.submitList(notes)
         }
     }
@@ -132,7 +133,7 @@ class TrashActivity : AppCompatActivity() {
             .setMessage("Deleted items will be permanently removed.")
             .setNegativeButton("Cancel", null)
             .setPositiveButton("Delete") { _, _ ->
-                noteViewModel.permanentlyDeleteAll()
+                trashViewModel.permanentlyDeleteAll()
             }
             .show()
     }

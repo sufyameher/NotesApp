@@ -16,6 +16,7 @@ import com.example.notesapp.folder.adapter.FolderWithInfoAdapter
 import com.example.notesapp.note.AddNoteActivity
 import com.example.notesapp.note.NoteAdapter
 import com.example.notesapp.note.NoteViewModel
+import timber.log.Timber
 
 class SearchActivity : AppCompatActivity() {
 
@@ -81,17 +82,15 @@ class SearchActivity : AppCompatActivity() {
 
                 folderViewModel.searchFolderSummaries(query).observe(this) { folders ->
                     folders.forEach {
-                        Log.d(
-                            "FolderQueryDebug",
-                            "Folder: ${it.folder.name}, Subfolders: ${it.subfolderCount}, Notes: ${it.noteCount}"
-                        )
+                        Timber.d("Folder: ${it.folder.name}, Subfolders: ${it.subfolderCount}, Notes: ${it.noteCount}")
                     }
                     folderWithInfoAdapter.updateFolders(folders)
                     binding.tvFolders.visibility = if (folders.isEmpty()) View.GONE else View.VISIBLE
                     binding.rvFolders.visibility = if (folders.isEmpty()) View.GONE else View.VISIBLE
                 }
 
-                noteViewModel.searchNotes(query).observe(this) { notes ->
+                noteViewModel.searchNotes(query) // just triggers the search
+                noteViewModel.searchResults.observe(this) { notes ->
                     noteAdapter.submitList(notes)
                     binding.tvNotes.visibility = if (notes.isEmpty()) View.GONE else View.VISIBLE
                     binding.rvNotes.visibility = if (notes.isEmpty()) View.GONE else View.VISIBLE
