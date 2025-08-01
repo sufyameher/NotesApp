@@ -1,10 +1,11 @@
-package com.example.notesapp.folder
+package com.example.notesapp.folder.ui
 
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import com.example.notesapp.databinding.BottomSheetFolderActionsBinding
+import com.example.notesapp.folder.data.FolderEntity
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
 
 class FolderActionBottomSheet(

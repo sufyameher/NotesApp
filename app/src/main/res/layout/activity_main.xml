@@ -30,6 +30,52 @@
                                    android:id="@+id/topBar"
                                    layout="@layout/tool_bar_layout" />
 
+                                <!-- Multi-select top bar -->
+                                <LinearLayout
+                                    android:id="@+id/selectionTopBar"
+                                    android:layout_width="match_parent"
+                                    android:layout_height="wrap_content"
+                                    android:background="#F1F2FA"
+                                    android:paddingHorizontal="16dp"
+                                    android:paddingVertical="10dp"
+                                    android:orientation="horizontal"
+                                    android:gravity="center_vertical"
+                                    android:visibility="gone">
+
+                                        <ImageView
+                                            android:id="@+id/ivCloseSelection"
+                                            android:layout_width="24dp"
+                                            android:layout_height="24dp"
+                                            android:src="@drawable/ic_close"
+                                            android:contentDescription="Close Selection" />
+
+                                        <TextView
+                                            android:id="@+id/tvSelectedCount"
+                                            android:layout_width="0dp"
+                                            android:layout_height="wrap_content"
+                                            android:layout_marginStart="16dp"
+                                            android:layout_weight="1"
+                                            android:text="0 Selected"
+                                            android:textSize="18sp"
+                                            android:textStyle="bold" />
+
+                                        <ImageView
+                                            android:id="@+id/ivShareSelection"
+                                            android:layout_width="24dp"
+                                            android:layout_height="24dp"
+                                            android:layout_marginEnd="16dp"
+                                            android:src="@drawable/ic_share"
+                                            android:contentDescription="Share" />
+
+                                        <ImageView
+                                            android:id="@+id/ivSelectionMenu"
+                                            android:layout_width="24dp"
+                                            android:layout_height="24dp"
+                                            android:src="@drawable/ic_more_vertical"
+                                            android:contentDescription="More Actions" />
+                                </LinearLayout>
+
+
                                 <View
                                     android:id="@+id/bottomSpacer"
                                     android:layout_width="match_parent"

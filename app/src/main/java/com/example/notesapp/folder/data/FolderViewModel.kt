@@ -1,11 +1,15 @@
-package com.example.notesapp.folder
+package com.example.notesapp.folder.data
 
 import android.app.Application
-import android.util.Log
-import androidx.lifecycle.*
+import androidx.lifecycle.AndroidViewModel
+import androidx.lifecycle.LiveData
+import androidx.lifecycle.MutableLiveData
+import androidx.lifecycle.viewModelScope
 import com.example.notesapp.db.AppDatabase
+import com.example.notesapp.folder.model.FolderWithNoteCount
 import com.example.notesapp.note.NoteRepository
 import kotlinx.coroutines.launch
+import timber.log.Timber
 
 class FolderViewModel(application: Application) : AndroidViewModel(application) {
 
@@ -41,12 +45,9 @@ class FolderViewModel(application: Application) : AndroidViewModel(application) 
 
     fun renameFolder(folderId: Int, newName: String) = viewModelScope.launch {
         folderRepository.getFolderById(folderId)?.let {
+            Timber.d("Renaming folder id=$folderId to $newName")
             folderRepository.update(it.copy(name = newName))
         }
-    }
-
-    fun softDeleteFolder(folder: FolderEntity) = viewModelScope.launch {
-        folderRepository.update(folder.copy(isDeleted = true))
     }
 
     fun deleteFolderAndNotes(folder: FolderEntity) = viewModelScope.launch {
@@ -67,31 +68,12 @@ class FolderViewModel(application: Application) : AndroidViewModel(application) 
         return folderRepository.getFolderInfo(folderId)
     }
 
-    fun moveNotesBetweenFolders(fromFolderId: Int, toFolderId: Int) = viewModelScope.launch {
-        val notes = noteRepository.getNotesByFolderIdRaw(fromFolderId)
-        Log.d("FolderMove", "Moving ${notes.size} notes from $fromFolderId to $toFolderId")
-
-        notes.forEach { note ->
-            val updatedNote = note.copy(folderId = toFolderId)
-            Log.d("FolderMove", "Note ID ${note.id} -> folderId ${updatedNote.folderId}")
-            noteRepository.update(updatedNote)
-        }
-    }
-
-    fun copyAllNotesFromFolderTo(fromFolderId: Int, toFolderId: Int) = viewModelScope.launch {
-        val notes = noteRepository.getNotesByFolderIdRaw(fromFolderId)
-        notes.forEach { note ->
-            val copied = note.copy(id = 0, folderId = toFolderId)
-            noteRepository.insert(copied)
-        }
+    fun getFolderLive(folderId: Int): LiveData<FolderEntity?> {
+        return folderRepository.getFolderLive(folderId)
     }
 
     fun searchFolderSummaries(query: String): LiveData<List<FolderWithNoteCount>> {
         return folderRepository.searchFolderSummaries(query)
-    }
-
-    fun searchFolders(query: String): LiveData<List<FolderEntity>> {
-        return folderRepository.searchFolders(query)
     }
 
     fun copyFolderWithContents(
@@ -130,8 +112,4 @@ class FolderViewModel(application: Application) : AndroidViewModel(application) 
             }
         }
     }
-
-
-
 }
-
