@@ -4,8 +4,11 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import com.example.notesapp.common.onClick
+import com.example.notesapp.common.removeBottomSheetBackground
+import com.example.notesapp.common.setTextOrGone
 import com.example.notesapp.databinding.BottomSheetFolderActionsBinding
-import com.example.notesapp.folder.data.FolderEntity
+import com.example.notesapp.folder.model.FolderEntity
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
 
 class FolderActionBottomSheet(
@@ -18,11 +21,7 @@ class FolderActionBottomSheet(
 
     private lateinit var binding: BottomSheetFolderActionsBinding
 
-    override fun onCreateView(
-        inflater: LayoutInflater,
-        container: ViewGroup?,
-        savedInstanceState: Bundle?
-    ): View {
+    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         binding = BottomSheetFolderActionsBinding.inflate(inflater, container, false)
         return binding.root
     }
@@ -34,21 +33,21 @@ class FolderActionBottomSheet(
 
     override fun onStart() {
         super.onStart()
-        dialog?.findViewById<View>(com.google.android.material.R.id.design_bottom_sheet)?.background = null
+        removeBottomSheetBackground()
     }
 
     private fun setupUI() = with(binding) {
         tvFolderTitle.text = folder.name
         tvFolderInfo.apply {
             text = folderInfo
-            visibility = if (folderInfo.isNullOrBlank()) View.GONE else View.VISIBLE
+            tvFolderInfo.setTextOrGone(folderInfo)
         }
     }
 
     private fun setupClickListeners() = with(binding) {
-        optionMove.setOnClickListener { onMoveTo(folder); dismiss() }
-        optionCopy.setOnClickListener { onCopyTo(folder); dismiss() }
-        optionDelete.setOnClickListener { onDelete(folder); dismiss()
+        optionMove.onClick { onMoveTo(folder); dismiss() }
+        optionCopy.onClick { onCopyTo(folder); dismiss() }
+        optionDelete.onClick { onDelete(folder); dismiss()
         }
     }
 }

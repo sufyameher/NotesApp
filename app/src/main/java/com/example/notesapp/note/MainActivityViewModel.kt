@@ -1,20 +1,26 @@
 package com.example.notesapp.note
 
-import android.app.Application
-import android.util.Log
 import androidx.lifecycle.*
-import com.example.notesapp.common.LiveDataHost
+ import com.example.notesapp.common.LiveDataHost
 import com.example.notesapp.common.LiveDataHostNullable
 import com.example.notesapp.common.PreferenceUtil
 import com.example.notesapp.common.ViewMode
-import com.example.notesapp.db.AppDatabase
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import timber.log.Timber
+import com.example.notesapp.folder.data.FolderRepository
+import com.example.notesapp.DummyDataUtil
+import com.example.notesapp.common.PreferenceUtil.sortBy
+import com.example.notesapp.common.PreferenceUtil.viewMode
+import dagger.hilt.android.lifecycle.HiltViewModel
+import javax.inject.Inject
 
-class NoteViewModel(application: Application) : AndroidViewModel(application) {
-    private val noteRepository = NoteRepository(AppDatabase.getInstance(application).noteDao())
+@HiltViewModel
+class MainActivityViewModel @Inject constructor(
+    private val noteRepository: NoteRepository,
+    private val folderRepository: FolderRepository
+) : ViewModel() {
 
     val viewMode: MutableLiveData<ViewMode> = MutableLiveData(PreferenceUtil.viewMode)
 
@@ -58,7 +64,7 @@ class NoteViewModel(application: Application) : AndroidViewModel(application) {
         currentFolderId = folderId
 
         viewModelScope.launch {
-            val sorted = noteRepository.getSortedNotesByFolderIdFlow(folderId, sortBy, order)
+            val sorted = noteRepository.getSortedNotesFlow(folderId, sortBy, order)
             folderSortedNotes(sorted)
         }
     }
@@ -142,5 +148,13 @@ class NoteViewModel(application: Application) : AndroidViewModel(application) {
             sortNotes(oldFolderId, "DATE_MODIFIED", "DESC")
         }
         sortNotes(newFolderId, "DATE_MODIFIED", "DESC")
+    }
+
+    fun createDummyNotesAndFolders() = viewModelScope.launch {
+        DummyDataUtil.createDummyNotesAndFolders(folderRepository, noteRepository)
+    }
+
+    suspend fun getAllNotesOnce(): List<NoteEntity> {
+        return noteRepository.getAllNotesOnce()
     }
 }

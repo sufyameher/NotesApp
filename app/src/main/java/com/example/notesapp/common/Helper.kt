@@ -6,6 +6,7 @@ import android.content.Context
 import android.content.pm.PackageManager
 import android.os.Build
 import android.view.View
+import android.view.inputmethod.EditorInfo
 import android.view.inputmethod.InputMethodManager
 import android.widget.Toast
 import androidx.core.app.ActivityCompat
@@ -15,11 +16,15 @@ import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
+import androidx.recyclerview.widget.RecyclerView
 import com.example.notesapp.databinding.FolderActivityBinding
-import com.example.notesapp.folder.data.FolderEntity
+import com.example.notesapp.databinding.ToolBarLayoutBinding
+import com.example.notesapp.folder.data.FolderActivityViewModel
+import com.example.notesapp.folder.model.FolderEntity
 import com.example.notesapp.note.NoteEntity
+import com.google.android.material.bottomsheet.BottomSheetBehavior
+import com.google.android.material.bottomsheet.BottomSheetDialog
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -27,8 +32,41 @@ import java.util.Locale
 
 object Helper {
     fun View.updateSpacerVisibility(folders: List<FolderEntity>, notes: List<NoteEntity>) {
-         visibility = if (folders.isNotEmpty() && notes.isNotEmpty()) View.VISIBLE else View.GONE
+        visibility = if (folders.isNotEmpty() && notes.isNotEmpty()) View.VISIBLE else View.GONE
     }
+
+    fun BottomSheetDialog.resize(percent: Float = 0.75f) {
+        window?.decorView?.findViewById<View>(com.google.android.material.R.id.design_bottom_sheet)
+            ?.let {
+                val height = (context.resources.displayMetrics.heightPixels * percent).toInt()
+                it.layoutParams.height = height
+                BottomSheetBehavior.from(it).peekHeight = height
+                it.requestLayout()
+            }
+    }
+
+    abstract class SelectableAdapter<T, VH : RecyclerView.ViewHolder> :
+        RecyclerView.Adapter<VH>() {
+        var selectedIds: MutableSet<Int> = mutableSetOf()
+    }
+
+     fun <T> toggleSelection(
+        item: T,
+        idSelector: (T) -> Int,
+        selectedSet: MutableSet<Int>,
+        adapter: SelectableAdapter<T, *>,
+        updateUI: () -> Unit
+    ) {
+        if (!selectedSet.addOrRemove(idSelector(item))) return
+        adapter.selectedIds = selectedSet
+        adapter.notifyDataSetChanged()
+        updateUI()
+    }
+
+    private fun MutableSet<Int>.addOrRemove(id: Int) =
+        if (contains(id)) remove(id) else add(id)
+
+
 
     fun <T> LifecycleOwner.observeFlow(
         flow: Flow<T>,
@@ -94,7 +132,11 @@ object Helper {
             Manifest.permission.READ_EXTERNAL_STORAGE
         }
 
-        if (ContextCompat.checkSelfPermission(activity, permission) != PackageManager.PERMISSION_GRANTED) {
+        if (ContextCompat.checkSelfPermission(
+                activity,
+                permission
+            ) != PackageManager.PERMISSION_GRANTED
+        ) {
             ActivityCompat.requestPermissions(activity, arrayOf(permission), requestCode)
         }
     }
@@ -116,4 +158,44 @@ object Helper {
         else notes.sortedWith(comparator)
     }
 
+    fun setupRenameFolder(
+        binding: ToolBarLayoutBinding,
+        originalFolderName: String,
+        currentFolderId: Int,
+        folderActivityViewModel: FolderActivityViewModel,
+        onRename: (String) -> Unit
+    ) {
+        with(binding) {
+            etTopBarTitle.setText(originalFolderName)
+            tvTopBarTitle.gone()
+            etTopBarTitle.show()
+            etTopBarTitle.showKeyboardAndFocus()
+
+            etTopBarTitle.setOnEditorActionListener { _, actionId, _ ->
+                if (actionId == EditorInfo.IME_ACTION_DONE) {
+                    val newName = etTopBarTitle.text.toString().trim()
+                    if (newName.isNotEmpty() && newName != originalFolderName) {
+                        folderActivityViewModel.renameFolder(currentFolderId, newName)
+                        tvTopBarTitle.text = newName
+                        onRename(newName)
+                    }
+
+                    etTopBarTitle.hideKeyboard()
+                    etTopBarTitle.gone()
+                    tvTopBarTitle.show()
+                    true
+                } else false
+            }
+        }
+    }
 }
+
+
+
+
+
+
+
+
+
+

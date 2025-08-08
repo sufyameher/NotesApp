@@ -1,6 +1,5 @@
 package com.example.notesapp.folder.data
 
-import androidx.lifecycle.LiveData
 import androidx.room.Dao
 import androidx.room.Delete
 import androidx.room.Insert
@@ -8,7 +7,9 @@ import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import androidx.room.Transaction
 import androidx.room.Update
+import com.example.notesapp.folder.model.FolderEntity
 import com.example.notesapp.folder.model.FolderWithNoteCount
+import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface FolderDao {
@@ -19,8 +20,17 @@ interface FolderDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertFolderToCopy(folder: FolderEntity): Long
 
+    @Insert
+    suspend fun insert(folderEntity: FolderEntity): Long
+
     @Update
     suspend fun updateFolder(folder: FolderEntity)
+
+    @Query("SELECT * FROM folders WHERE id = :folderId LIMIT 1")
+    fun getFolderLiveFlow(folderId: Int): Flow<FolderEntity?>
+
+    @Query("DELETE FROM folders")
+    suspend fun deleteAllFolders()
 
     @Delete
     suspend fun delete(folder: FolderEntity)
@@ -29,31 +39,22 @@ interface FolderDao {
     suspend fun getFolderById(folderId: Int): FolderEntity?
 
     @Query("SELECT * FROM folders ORDER BY createdDate DESC")
-    fun getAllFolders(): LiveData<List<FolderEntity>>
+    fun getAllFoldersFlow(): Flow<List<FolderEntity>>
 
     @Query("SELECT * FROM folders WHERE isDeleted = 0 ORDER BY createdDate DESC")
-    fun getActiveFolders(): LiveData<List<FolderEntity>>
+    fun getActiveFoldersFlow(): Flow<List<FolderEntity>>
 
     @Query("SELECT * FROM folders WHERE isDeleted = 1 ORDER BY createdDate DESC")
-    fun getDeletedFolders(): LiveData<List<FolderEntity>>
+    fun getDeletedFoldersFlow(): Flow<List<FolderEntity>>
 
-    @Query("""
-        SELECT * FROM folders 
-        WHERE parentFolderId = :parentId AND isDeleted = 0 
-        ORDER BY createdDate DESC
-    """)
-    fun getSubfolders(parentId: Int): LiveData<List<FolderEntity>>
+    @Query("SELECT * FROM folders WHERE parentFolderId = :parentId AND isDeleted = 0 ORDER BY createdDate DESC")
+    fun getSubfoldersFlow(parentId: Int): Flow<List<FolderEntity>>
 
-    @Query("SELECT * FROM folders WHERE parentFolderId = :parentId")
+    @Query("SELECT * FROM folders WHERE parentFolderId = :parentId AND isDeleted = 0")
     suspend fun getSubfoldersRaw(parentId: Int): List<FolderEntity>
 
-
-    @Query("""
-        SELECT * FROM folders 
-        WHERE isDeleted = 0 AND name LIKE :query 
-        ORDER BY name
-    """)
-    fun searchFolders(query: String): LiveData<List<FolderEntity>>
+    @Query("SELECT * FROM folders WHERE isDeleted = 0 AND name LIKE :query ORDER BY name")
+    fun searchFoldersFlow(query: String): Flow<List<FolderEntity>>
 
     @Query("""
         SELECT f.*, 
@@ -62,7 +63,7 @@ interface FolderDao {
         FROM folders f
         WHERE f.isDeleted = 0 AND f.name LIKE :query
     """)
-    fun searchFolderSummaries(query: String): LiveData<List<FolderWithNoteCount>>
+    fun searchFolderSummariesFlow(query: String): Flow<List<FolderWithNoteCount>>
 
     @Transaction
     @Query("""
@@ -73,5 +74,5 @@ interface FolderDao {
         WHERE f.id = :folderId
         LIMIT 1
     """)
-    fun getFolderSummary(folderId: Int): LiveData<FolderWithNoteCount>
+    fun getFolderSummaryFlow(folderId: Int): Flow<FolderWithNoteCount>
 }

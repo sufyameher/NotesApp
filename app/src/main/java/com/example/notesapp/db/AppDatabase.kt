@@ -1,13 +1,12 @@
 package com.example.notesapp.db
 
 import android.content.Context
-import androidx.databinding.adapters.Converters
-import androidx.room.Database
+ import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
 import androidx.room.TypeConverters
 import com.example.notesapp.folder.data.FolderDao
-import com.example.notesapp.folder.data.FolderEntity
+import com.example.notesapp.folder.model.FolderEntity
 import com.example.notesapp.note.NoteDao
 import com.example.notesapp.note.NoteEntity
 

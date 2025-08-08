@@ -12,20 +12,27 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AlertDialog
+import androidx.fragment.app.FragmentActivity
 import androidx.fragment.app.FragmentManager
+import androidx.lifecycle.LifecycleOwner
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.example.notesapp.R
 import com.example.notesapp.folder.ui.FolderActionBottomSheet
 import com.example.notesapp.common.Helper.hideKeyboard
+import com.example.notesapp.common.Helper.observeOnce
 import com.example.notesapp.common.Helper.showKeyboard
 import com.example.notesapp.common.Helper.toast
 import com.example.notesapp.note.NoteActionBottomSheet
 import com.example.notesapp.common.ViewMode
 import com.example.notesapp.databinding.DialogNewFolderBinding
-import com.example.notesapp.folder.data.FolderEntity
+import com.example.notesapp.folder.adapter.FolderAdapter
+import com.example.notesapp.folder.model.FolderEntity
+import com.example.notesapp.folder.data.FolderActivityViewModel
+import com.example.notesapp.note.NoteAdapter
 import com.example.notesapp.note.NoteEntity
+import com.example.notesapp.note.MainActivityViewModel
 
 fun showDeleteForeverConfirmation(context: Context, onConfirm: () -> Unit) {
     AlertDialog.Builder(context)
@@ -287,10 +294,6 @@ fun showMultiFolderDialog(
     }
 }
 
-
-
-
-
 fun getLayoutManager(context: Context, mode: ViewMode): RecyclerView.LayoutManager {
     return when (mode) {
         ViewMode.LIST -> LinearLayoutManager(context)
@@ -346,7 +349,9 @@ fun showNoteActions(
     note: NoteEntity,
     getFolders: (onResult: (List<FolderEntity>) -> Unit) -> Unit,
     onNoteUpdated: (NoteEntity) -> Unit,
-    onNoteInserted: (NoteEntity) -> Unit
+    onNoteInserted: (NoteEntity) -> Unit,
+    onTogglePin: (NoteEntity) -> Unit
+
 ) {
     NoteActionBottomSheet(
         note = note,
@@ -357,8 +362,6 @@ fun showNoteActions(
                 val availableFolders = folders.filter { it.id != currentFolderId }
                 val idToFolderMap = folders.associateBy { it.id }
                 val currentFolder = idToFolderMap[currentFolderId]
-
-
 
                 if (availableFolders.isEmpty()) {
                     Toast.makeText(context, "No folders available to move", Toast.LENGTH_SHORT).show()
@@ -384,6 +387,8 @@ fun showNoteActions(
             getFolders { folders ->
                 val currentFolderId = selectedNote.folderId
                 val availableFolders = folders.filter { it.id != currentFolderId }
+                val idToFolderMap = folders.associateBy { it.id }
+                val currentFolder = idToFolderMap[currentFolderId]
 
                 if (availableFolders.isEmpty()) {
                     context.toast("No folders available to copy")
@@ -396,8 +401,8 @@ fun showNoteActions(
                     folders = availableFolders,
                     currentFolderId = currentFolderId ?: -1,
                     titleText = "Copy to",
-
-                    ) { targetFolder ->
+                    startFromFolder = currentFolder
+                ) { targetFolder ->
                     targetFolder?.let {
                         val copiedNote = selectedNote.copy(
                             id = 0,
@@ -421,6 +426,17 @@ fun showNoteActions(
                     Toast.makeText(context, "Note deleted successfully", Toast.LENGTH_SHORT).show()
                 }
                 .show()
+        },
+
+        onTogglePin = { selectedNote ->
+            val updatedNote = selectedNote.copy(
+                isPinned = !selectedNote.isPinned,
+                modifiedDate = System.currentTimeMillis()
+            )
+            onNoteUpdated(updatedNote)
+
+            val message = if (updatedNote.isPinned) "Note pinned" else "Note unpinned"
+            context.toast(message)
         }
 
     ).show(fragmentManager, "NoteActionBottomSheet")
@@ -592,4 +608,270 @@ fun showFolderActions(
     ).show(fragmentManager, "FolderActionBottomSheet")
 }
 
+fun showFolderActionsDialog(
+    context: Context,
+    fragmentManager: FragmentManager,
+    folder: FolderEntity,
+    folderInfo: String?,
+    onMoveTo: (FolderEntity) -> Unit,
+    onCopyTo: (FolderEntity) -> Unit,
+    onDelete: (FolderEntity) -> Unit
+) {
+    FolderActionBottomSheet(
+        folder = folder,
+        folderInfo = folderInfo,
+        onMoveTo = { onMoveTo(folder) },
+        onCopyTo = { onCopyTo(folder) },
+        onDelete = { onDelete(folder) }
+    ).show(fragmentManager, "FolderActionBottomSheet")
+}
 
+
+fun handleMoveFolders(
+    context: Context,
+    inflater: LayoutInflater,
+    selectedFolders: List<FolderEntity>,
+    folderActivityViewModel: FolderActivityViewModel,
+    exitMultiSelectMode: () -> Unit
+) {
+    if (selectedFolders.isEmpty()) return
+
+    val allFolders = folderActivityViewModel.activeFolders.value ?: return
+
+    if (allFolders.isEmpty()) {
+        context.toast("No folders available to move")
+        return
+    }
+
+    val excludedIds = selectedFolders.map { it.id }.toSet()
+
+    showMultiFolderDialog(
+        context = context,
+        inflater = inflater,
+        folders = allFolders,
+        excludedFolderIds = excludedIds,
+        titleText = "Move to",
+        startFromFolder = null
+    ) { targetFolder ->
+        targetFolder?.let {
+            selectedFolders.forEach { folder ->
+                folderActivityViewModel.moveFolderToParent(folder, it.id)
+            }
+            context.toast("Moved ${selectedFolders.size} folder(s) to '${it.name}'")
+            exitMultiSelectMode()
+        }
+    }
+}
+
+fun handleCopyFolders(
+    context: Context,
+    inflater: LayoutInflater,
+    lifecycleOwner: LifecycleOwner,
+    selectedFolders: List<FolderEntity>,
+    folderActivityViewModel: FolderActivityViewModel,
+    exitMultiSelectMode: () -> Unit
+) {
+    if (selectedFolders.isEmpty()) return
+
+    folderActivityViewModel.allFolders.observeOnce(lifecycleOwner) { allFolders ->
+        if (allFolders.isEmpty()) {
+            context.toast("No folders available to copy to")
+            return@observeOnce
+        }
+
+        val excludedIds = selectedFolders.map { it.id }.toSet()
+
+        showMultiFolderDialog(
+            context = context,
+            inflater = inflater,
+            folders = allFolders,
+            excludedFolderIds = excludedIds,
+            titleText = "Copy to",
+            startFromFolder = null
+        ) { targetFolder ->
+            targetFolder?.let {
+                selectedFolders.forEach { folder ->
+                    folderActivityViewModel.copyFolderWithContents(folder, it.id) {
+                        folderActivityViewModel.refreshSubfolders(it.id, onlyIfVisible = 0)
+                    }
+                }
+                context.toast("Copied ${selectedFolders.size} folder(s) to '${it.name}'")
+                exitMultiSelectMode()
+            }
+        }
+    }
+}
+
+fun handleDeleteFolders(
+    context: Context,
+    selectedFolders: List<FolderEntity>,
+    folderActivityViewModel: FolderActivityViewModel,
+    exitMultiSelectMode: () -> Unit
+) {
+    if (selectedFolders.isEmpty()) return
+
+    AlertDialog.Builder(context)
+        .setTitle("Are you sure?")
+        .setMessage("These ${selectedFolders.size} folder(s) and their notes will be moved to Recently Deleted.")
+        .setNegativeButton("Cancel", null)
+        .setPositiveButton("Delete") { _, _ ->
+            selectedFolders.forEach { folder ->
+                folderActivityViewModel.deleteFolderAndNotes(folder)
+            }
+            context.toast("Deleted ${selectedFolders.size} folder(s)")
+            exitMultiSelectMode()
+        }.show()
+}
+
+fun handleNoteSwipe(
+    activity: FragmentActivity,
+    note: NoteEntity,
+    position: Int,
+    noteAdapter: NoteAdapter,
+    folderActivityViewModel: FolderActivityViewModel,
+    viewModel: MainActivityViewModel
+) {
+    showNoteActions(
+        context = activity,
+        fragmentManager = activity.supportFragmentManager,
+        note = note,
+        getFolders = { callback ->
+            folderActivityViewModel.activeFolders.value?.let { callback(it) }
+        },
+        onNoteUpdated = { viewModel.update(it) },
+        onNoteInserted = { viewModel.insert(it) },
+        onTogglePin = { selectedNote -> viewModel.togglePin(selectedNote) }
+    )
+    noteAdapter.notifyItemChanged(position)
+}
+
+fun handleFolderSwipe(
+    activity: FragmentActivity,
+    folder: FolderEntity,
+    position: Int,
+    folderAdapter: FolderAdapter,
+    folderActivityViewModel: FolderActivityViewModel
+) {
+    folderActivityViewModel.getFolderInfo(folder.id)
+    folderActivityViewModel.folderInfo.observeOnce(activity) { info ->
+        showFolderActions(
+            context = activity,
+            fragmentManager = activity.supportFragmentManager,
+            folder = folder,
+            getAvailableFolders = { callback ->
+                folderActivityViewModel.activeFolders.value?.let { callback(it) }
+            },
+            onMoveTo = { fromFolder, toFolder ->
+                folderActivityViewModel.moveFolderToParent(fromFolder, toFolder.id)
+            },
+            onCopyTo = { fromFolderId, toFolderId ->
+                folderActivityViewModel.copyFolderWithContents(
+                    folder,
+                    toFolderId
+                ) { folderActivityViewModel.refreshSubfolders(toFolderId, onlyIfVisible = 0) }
+            },
+            onDelete = { selectedFolder ->
+                folderActivityViewModel.deleteFolderAndNotes(selectedFolder)
+            }
+        )
+        folderAdapter.notifyItemChanged(position)
+    }
+}
+
+fun showFolderActionSheet(
+    activity: FragmentActivity,
+    folder: FolderEntity,
+    folderInfo: String?,
+    folderActivityViewModel: FolderActivityViewModel,
+    currentFolderId: Int
+) {
+    FolderActionBottomSheet(
+        folder = folder,
+        folderInfo = folderInfo,
+        onMoveTo = { selectedFolder ->
+            handleMoveFolder(activity, folderActivityViewModel, selectedFolder)
+        },
+        onCopyTo = { selectedFolder ->
+            handleCopyFolder(activity, folderActivityViewModel, selectedFolder, currentFolderId)
+        },
+        onDelete = { selectedFolder ->
+            confirmDeleteFolder(activity, folderActivityViewModel, selectedFolder)
+        }
+    ).show(activity.supportFragmentManager, "FolderActionBottomSheet")
+}
+
+fun handleMoveFolder(
+    activity: FragmentActivity,
+    folderActivityViewModel: FolderActivityViewModel,
+    selectedFolder: FolderEntity
+) {
+    folderActivityViewModel.allFolders.observeOnce(activity) { allFolders ->
+        val parentFolder = allFolders.find { it.id == selectedFolder.parentFolderId }
+        val available = allFolders.filter { it.id != selectedFolder.id }
+        if (available.isEmpty()) return@observeOnce activity.toast("No folders to move")
+
+        showMoveConfirmDialog(
+            context = activity,
+            inflater = activity.layoutInflater,
+            folders = available,
+            currentFolderId = selectedFolder.id,
+            startFromFolder = parentFolder,
+            titleText = "Move to"
+        ) { targetFolder ->
+            targetFolder?.let {
+                folderActivityViewModel.moveFolderToParent(selectedFolder, it.id)
+                folderActivityViewModel.refreshSubfolders(selectedFolder.id)
+                activity.toast("Folder moved to '${it.name}'")
+            }
+        }
+    }
+}
+
+fun handleCopyFolder(
+    activity: FragmentActivity,
+    folderActivityViewModel: FolderActivityViewModel,
+    selectedFolder: FolderEntity,
+    currentFolderId: Int
+) {
+    folderActivityViewModel.allFolders.observeOnce(activity) { allFolders ->
+        val parentFolder = allFolders.find { it.id == selectedFolder.parentFolderId }
+        val available = allFolders.filter { it.id != selectedFolder.id }
+        if (available.isEmpty()) return@observeOnce activity.toast("No folders to move")
+
+        showMoveConfirmDialog(
+            context = activity,
+            inflater = activity.layoutInflater,
+            folders = available,
+            currentFolderId = selectedFolder.id,
+            startFromFolder = parentFolder,
+            titleText = "Copy to"
+        ) { targetFolder ->
+            if (targetFolder == null) {
+             } else {
+                 folderActivityViewModel.copyFolderWithContents(selectedFolder, targetFolder.id) {
+                     folderActivityViewModel.refreshSubfolders(
+                        targetFolder.id,
+                        onlyIfVisible = currentFolderId
+                    )
+                    activity.toast("Folder copied to '${targetFolder.name}'")
+                }
+            }
+        }
+    }
+}
+
+fun confirmDeleteFolder(
+    activity: FragmentActivity,
+    folderActivityViewModel: FolderActivityViewModel,
+    folder: FolderEntity
+) {
+    AlertDialog.Builder(activity)
+        .setTitle("Are you sure?")
+        .setMessage("This folder and its notes will be moved to Recently Deleted.")
+        .setNegativeButton("Cancel", null)
+        .setPositiveButton("Delete") { _, _ ->
+            folderActivityViewModel.deleteFolderAndNotes(folder)
+            activity.toast("Folder deleted successfully")
+        }
+        .show()
+}

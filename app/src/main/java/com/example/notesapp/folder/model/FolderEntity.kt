@@ -1,4 +1,4 @@
-package com.example.notesapp.folder.data
+package com.example.notesapp.folder.model
 
 import androidx.room.Entity
 import androidx.room.PrimaryKey
@@ -11,5 +11,4 @@ data class FolderEntity(
     val createdDate: Long = System.currentTimeMillis(),
     val isDeleted: Boolean = false,
     val parentFolderId: Int? = null
-
 )

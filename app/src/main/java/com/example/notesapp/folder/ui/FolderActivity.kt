@@ -14,29 +14,38 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import com.example.notesapp.R
 import com.example.notesapp.common.Helper
 import com.example.notesapp.common.Helper.hideKeyboard
-import com.example.notesapp.common.Helper.observeOnce
-import com.example.notesapp.common.Helper.showKeyboard
+import com.example.notesapp.common.Helper.updateSectionVisibility
+import com.example.notesapp.common.multiselect.MultiSelectHelper
+import com.example.notesapp.common.SelectionUtils
 import com.example.notesapp.common.ToolbarHelper
 import com.example.notesapp.common.bottomsheet.SortBottomSheet
 import com.example.notesapp.common.getFolderActivityNoteSwipeCallback
 import com.example.notesapp.common.getFolderActivitySubfolderSwipeCallback
+import com.example.notesapp.common.gone
 import com.example.notesapp.common.multiselect.MultiSelectActionHandler
+import com.example.notesapp.common.onClick
+import com.example.notesapp.common.onClickWithView
+import com.example.notesapp.common.show
+import com.example.notesapp.common.showKeyboardAndFocus
+import com.example.notesapp.common.visibleFolders
 import com.example.notesapp.databinding.FolderActivityBinding
 import com.example.notesapp.folder.adapter.FolderAdapter
-import com.example.notesapp.folder.data.FolderEntity
-import com.example.notesapp.folder.data.FolderViewModel
+import com.example.notesapp.folder.data.FolderActivityViewModel
+import com.example.notesapp.folder.model.FolderEntity
 import com.example.notesapp.note.AddNoteActivity
+import com.example.notesapp.note.MainActivityViewModel
 import com.example.notesapp.note.NoteAdapter
 import com.example.notesapp.note.NoteEntity
-import com.example.notesapp.note.NoteViewModel
 import com.example.notesapp.util.getLayoutManager
 import com.example.notesapp.util.showNewFolderDialog
+import dagger.hilt.android.AndroidEntryPoint
 
+@AndroidEntryPoint
 class FolderActivity : AppCompatActivity() {
 
     private lateinit var binding: FolderActivityBinding
-    private lateinit var folderViewModel: FolderViewModel
-    private val noteViewModel: NoteViewModel by viewModels()
+    private lateinit var folderActivityViewModel: FolderActivityViewModel
+    private val mainActivityViewModel: MainActivityViewModel by viewModels()
 
     private var currentFolderId: Int = -1
     private var originalFolderName: String = ""
@@ -50,7 +59,6 @@ class FolderActivity : AppCompatActivity() {
 
     private val selectedNoteIds = mutableSetOf<Int>()
     private val selectedFolderIds = mutableSetOf<Int>()
-
 
     private var latestNotes: List<NoteEntity> = emptyList()
     private var latestSubfolders: List<FolderEntity> = emptyList()
@@ -71,11 +79,11 @@ class FolderActivity : AppCompatActivity() {
         observeNotes()
         observeViewMode()
         setupMultiSelectHandler()
-        //noteViewModel.sortNotesInFolder(currentFolderId, "DATE_CREATED", "DESC")
+        folderActivityViewModel.loadInitialFolders()
     }
 
     private fun initViewModels() {
-        folderViewModel = ViewModelProvider(this)[FolderViewModel::class.java]
+        folderActivityViewModel = ViewModelProvider(this)[FolderActivityViewModel::class.java]
     }
 
     private fun initIntentData() {
@@ -83,7 +91,8 @@ class FolderActivity : AppCompatActivity() {
     }
 
     private fun observeCurrentFolder() {
-        folderViewModel.getFolderLive(currentFolderId).observe(this) { folder ->
+        folderActivityViewModel.getFolderLive(currentFolderId)
+        folderActivityViewModel.folderById.observe(this) { folder ->
             folder?.let {
                 originalFolderName = it.name
                 editedFolderName = it.name
@@ -93,21 +102,23 @@ class FolderActivity : AppCompatActivity() {
     }
 
     private fun setupClickListeners() {
-        binding.ivCloseSelection.setOnClickListener {
+        binding.ivCloseSelection.onClick {
             exitMultiSelectMode() }
-        binding.ivSelectionMenu.setOnClickListener {
-            showSelectionMenuPopup(it) }
+        binding.ivSelectionMenu.onClickWithView { view ->
+            showSelectionMenuPopup(view)
+        }
     }
 
     private fun setupMultiSelectHandler() {
         multiSelectActionHandler = MultiSelectActionHandler(
             context = this,
             lifecycleOwner = this,
-            noteViewModel = noteViewModel,
-            folderViewModel = folderViewModel,
+            mainActivityViewModel = mainActivityViewModel,
+            folderActivityViewModel = folderActivityViewModel,
             fragmentManager = supportFragmentManager,
             layoutInflater = layoutInflater,
             exitMultiSelectMode = { exitMultiSelectMode() },
+            filterVisibleFolders = { it.visibleFolders(currentFolderId) },
             refreshRootFoldersUI = { updatedSubfolders ->
                 subfolderAdapter.submitList(updatedSubfolders)
                 latestSubfolders = updatedSubfolders
@@ -116,33 +127,15 @@ class FolderActivity : AppCompatActivity() {
         )
     }
 
-    private fun handleMoveSelectedItemsAndFolders() {
-        val selectedNotes = latestNotes.filter { selectedNoteIds.contains(it.id) }
-        val selectedFolders = latestSubfolders.filter { selectedFolderIds.contains(it.id) }
-        multiSelectActionHandler.handleMove(selectedNotes, selectedFolders)
-    }
-
-    private fun handleCopySelectedItemsAndFolders() {
-        val selectedNotes = latestNotes.filter { selectedNoteIds.contains(it.id) }
-        val selectedFolders = latestSubfolders.filter { selectedFolderIds.contains(it.id) }
-        multiSelectActionHandler.handleCopy(selectedNotes, selectedFolders)
-    }
-
-    private fun handleDeleteSelectedItemsAndFolders() {
-        val selectedNotes = latestNotes.filter { selectedNoteIds.contains(it.id) }
-        val selectedFolders = latestSubfolders.filter { selectedFolderIds.contains(it.id) }
-        multiSelectActionHandler.handleDelete(selectedNotes, selectedFolders)
-    }
-
     private fun showSelectionMenuPopup(anchor: View) {
         PopupMenu(this, anchor).apply {
             menuInflater.inflate(R.menu.menu_multiselect, menu)
             setOnMenuItemClickListener {
                 when (it.itemId) {
-                    R.id.action_move -> handleMoveSelectedItemsAndFolders()
-                    R.id.action_copy -> handleCopySelectedItemsAndFolders()
-                    R.id.action_delete -> handleDeleteSelectedItemsAndFolders()
-                    R.id.action_select_all -> handleSelectAllItemsAndFolders()
+                    R.id.action_move -> MultiSelectHelper.handleMove(latestNotes, latestSubfolders, selectedNoteIds, selectedFolderIds, multiSelectActionHandler)
+                    R.id.action_copy -> MultiSelectHelper.handleCopy(latestNotes, latestSubfolders, selectedNoteIds, selectedFolderIds, multiSelectActionHandler)
+                    R.id.action_delete -> MultiSelectHelper.handleDelete(latestNotes, latestSubfolders, selectedNoteIds, selectedFolderIds, multiSelectActionHandler)
+                    R.id.action_select_all -> SelectionUtils.handleSelectAll(latestNotes, latestSubfolders, selectedNoteIds, selectedFolderIds, noteAdapter, subfolderAdapter, ::updateSelectionCount)
                 }
                 true
             }
@@ -152,25 +145,20 @@ class FolderActivity : AppCompatActivity() {
     private fun setupToolbar() {
         with(binding.topBar) {
             tvTopBarTitle.text = originalFolderName
-            tvTopBarTitle.setOnClickListener { setupRenameFolder() }
+            tvTopBarTitle.onClick { setupRenameFolder() }
             ivNavToggle.setImageResource(R.drawable.ic_arrow_back)
-            ivNavToggle.setOnClickListener { handleFolderRenameIfNeeded()
+            ivNavToggle.onClick { handleFolderRenameIfNeeded()
                 onBackPressedDispatcher.onBackPressed() }
         }
 
         ToolbarHelper.setup(
             activity = this,
             toolbarBinding = binding.topBar,
-            viewModel = noteViewModel,
+            viewModel = mainActivityViewModel,
             title = originalFolderName,
             onClickNewFolder = {
                 showNewFolderDialog(this, currentFolderId) { newFolder ->
-                    folderViewModel.insert(newFolder)
-
-                    // ✅ Manually add the new folder to the current subfolder list and update the adapter
-//                    latestSubfolders = latestSubfolders + newFolder
-//                    subfolderAdapter.submitList(latestSubfolders)
-//                    updateSectionVisibility()
+                    folderActivityViewModel.insert(newFolder)
                 }
             },
             onClickSort = { showSortBottomSheet() }
@@ -178,35 +166,16 @@ class FolderActivity : AppCompatActivity() {
     }
 
     private fun setupRenameFolder() {
-        val tvTopBarTitle = binding.topBar.tvTopBarTitle
-        val etTopBarTitle = binding.topBar.etTopBarTitle
-
-        etTopBarTitle.setText(originalFolderName)
-
-        tvTopBarTitle.visibility = View.GONE
-        etTopBarTitle.visibility = View.VISIBLE
-        etTopBarTitle.requestFocus()
-        etTopBarTitle.setSelection(etTopBarTitle.text.length)
-        etTopBarTitle.showKeyboard()
-
-        etTopBarTitle.setOnEditorActionListener { _, actionId, _ ->
-            if (actionId == EditorInfo.IME_ACTION_DONE) {
-                val newName = etTopBarTitle.text.toString().trim()
-                if (newName.isNotEmpty() && newName != originalFolderName) {
-                    folderViewModel.renameFolder(currentFolderId, newName)
-                    tvTopBarTitle.text = newName
-                    originalFolderName = newName
-                    editedFolderName = newName
-                }
-
-                etTopBarTitle.hideKeyboard()
-                etTopBarTitle.visibility = View.GONE
-                tvTopBarTitle.visibility = View.VISIBLE
-                true
-            } else {
-                false
-            }
+        Helper.setupRenameFolder(
+            binding = binding.topBar,
+            originalFolderName = originalFolderName,
+            currentFolderId = currentFolderId,
+            folderActivityViewModel = folderActivityViewModel
+        ) { newName ->
+            originalFolderName = newName
+            editedFolderName = newName
         }
+
     }
 
     override fun onBackPressed() {
@@ -221,7 +190,7 @@ class FolderActivity : AppCompatActivity() {
     private fun handleFolderRenameIfNeeded() {
         val newName = binding.topBar.etTopBarTitle.text.toString().trim()
         if (newName.isNotEmpty() && newName != originalFolderName) {
-            folderViewModel.renameFolder(currentFolderId, newName)
+            folderActivityViewModel.renameFolder(currentFolderId, newName)
             originalFolderName = newName
             editedFolderName = newName
         }
@@ -237,7 +206,8 @@ class FolderActivity : AppCompatActivity() {
     private fun setupNoteAdapter() {
         noteAdapter = NoteAdapter(
             onItemClick = { note ->
-                if (isMultiSelectMode) toggleNoteSelection(note)
+                if (isMultiSelectMode)
+                    SelectionUtils.toggleNoteSelection(note, selectedNoteIds, noteAdapter, ::updateSelectionCount)
                 else openNoteEditor(note.id)
             },
             onNoteLongClick = {
@@ -275,8 +245,8 @@ class FolderActivity : AppCompatActivity() {
                     activity = this@FolderActivity,
                     latestNotes = { latestNotes },
                     noteAdapter = noteAdapter,
-                    noteViewModel = noteViewModel,
-                    folderViewModel = folderViewModel
+                    mainActivityViewModel = mainActivityViewModel,
+                    folderActivityViewModel = folderActivityViewModel
                 )
             ).attachToRecyclerView(this)
         }
@@ -291,7 +261,7 @@ class FolderActivity : AppCompatActivity() {
                     activity = this@FolderActivity,
                     latestSubfolders = { latestSubfolders },
                     folderAdapter = subfolderAdapter,
-                    folderViewModel = folderViewModel,
+                    folderActivityViewModel = folderActivityViewModel,
                     currentFolderId = currentFolderId
                 )
             ).attachToRecyclerView(this)
@@ -301,61 +271,34 @@ class FolderActivity : AppCompatActivity() {
     private fun enableMultiSelectMode() {
         if (isMultiSelectMode) return
         isMultiSelectMode = true
-        noteAdapter.isMultiSelectMode = true
-        subfolderAdapter.isMultiSelectMode = true
-        binding.topBar.root.visibility = View.GONE
-        binding.selectionTopBar.visibility = View.VISIBLE
-        updateSelectionCount()
-        noteAdapter.notifyDataSetChanged()
-        subfolderAdapter.notifyDataSetChanged()
+        MultiSelectHelper.enableMultiSelect(
+            binding,
+            noteAdapter,
+            subfolderAdapter,
+            selectedNoteIds,
+            selectedFolderIds,
+            ::updateSelectionCount
+        )
     }
 
     private fun exitMultiSelectMode() {
         isMultiSelectMode = false
-        selectedNoteIds.clear()
-        selectedFolderIds.clear()
-        noteAdapter.isMultiSelectMode = false
-        subfolderAdapter.isMultiSelectMode = false
-        noteAdapter.selectedIds = emptySet()
-        subfolderAdapter.selectedIds = emptySet()
-        noteAdapter.notifyDataSetChanged()
-        subfolderAdapter.notifyDataSetChanged()
-        binding.topBar.root.visibility = View.VISIBLE
-        binding.selectionTopBar.visibility = View.GONE
+        MultiSelectHelper.exitMultiSelect(
+            binding,
+            noteAdapter,
+            subfolderAdapter,
+            selectedNoteIds,
+            selectedFolderIds,
+            ::updateSelectionCount
+        )
     }
 
-
     private fun toggleNoteSelection(note: NoteEntity) {
-        if (selectedNoteIds.contains(note.id)) selectedNoteIds.remove(note.id)
-        else selectedNoteIds.add(note.id)
-        noteAdapter.selectedIds = selectedNoteIds
-        noteAdapter.notifyDataSetChanged()
-        updateSelectionCount()
-
+        SelectionUtils.toggleNoteSelection(note, selectedNoteIds, noteAdapter, ::updateSelectionCount)
     }
 
     private fun toggleFolderSelection(folder: FolderEntity) {
-        if (selectedFolderIds.contains(folder.id)) selectedFolderIds.remove(folder.id)
-        else selectedFolderIds.add(folder.id)
-        subfolderAdapter.selectedIds = selectedFolderIds
-        subfolderAdapter.notifyDataSetChanged()
-        updateSelectionCount()
-
-    }
-
-    private fun handleSelectAllItemsAndFolders() {
-        selectedNoteIds.clear()
-        selectedNoteIds.addAll(latestNotes.map { it.id })
-
-        selectedFolderIds.clear()
-        selectedFolderIds.addAll(latestSubfolders.map { it.id })
-
-        noteAdapter.selectedIds = selectedNoteIds
-        subfolderAdapter.selectedIds = selectedFolderIds
-
-        updateSelectionCount()
-        noteAdapter.notifyDataSetChanged()
-        subfolderAdapter.notifyDataSetChanged()
+        SelectionUtils.toggleFolderSelection(folder, selectedFolderIds, subfolderAdapter, ::updateSelectionCount)
     }
 
     private fun updateSelectionCount() {
@@ -365,26 +308,21 @@ class FolderActivity : AppCompatActivity() {
 
     override fun onResume() {
         super.onResume()
-        folderViewModel.refreshSubfolders(currentFolderId)
+        folderActivityViewModel.refreshSubfolders(currentFolderId)
     }
 
     private fun observeFolders() {
-        folderViewModel.getSubfolders(currentFolderId).observe(this) { subfolders ->
+        folderActivityViewModel.getSubfolders(currentFolderId)
+        folderActivityViewModel.subfolders.observe(this) { subfolders ->
             latestSubfolders = subfolders
             subfolderAdapter.submitList(subfolders)
             updateSectionVisibility()
         }
-
-//        folderViewModel.subfolders.observe(this) { subfolders ->
-//            latestSubfolders = subfolders
-//            subfolderAdapter.submitList(subfolders)
-//            updateSectionVisibility()
-//        }
     }
 
     private fun observeNotes() {
-        noteViewModel.getNotesByFolderId(currentFolderId)
-        noteViewModel.folderNotes.observe(this) { notes ->
+        mainActivityViewModel.getNotesByFolderId(currentFolderId)
+        mainActivityViewModel.folderNotes.observe(this) { notes ->
             latestNotes = notes
             noteAdapter.submitList(notes)
             updateSectionVisibility()
@@ -392,7 +330,7 @@ class FolderActivity : AppCompatActivity() {
     }
 
     private fun updateSectionVisibility() {
-         Helper.updateSectionVisibility(
+         updateSectionVisibility(
             binding = binding,
             hasSubfolders = latestSubfolders.isNotEmpty(),
             hasNotes = latestNotes.isNotEmpty()
@@ -401,7 +339,7 @@ class FolderActivity : AppCompatActivity() {
 
 
     private fun observeViewMode() {
-        noteViewModel.viewMode.observe(this) { mode ->
+        mainActivityViewModel.viewMode.observe(this) { mode ->
             binding.recyclerView.layoutManager = getLayoutManager(this, mode)
             binding.subfolderRecyclerView.layoutManager = getLayoutManager(this, mode)
         }
@@ -413,16 +351,14 @@ class FolderActivity : AppCompatActivity() {
         }
     }
 
-
     private fun openNoteEditor(noteId: Int) {
         AddNoteActivity.launch(this, noteId = noteId)
     }
 
-
     private fun showSortBottomSheet() {
         SortBottomSheet.show(supportFragmentManager) { sortBy, order ->
-            noteViewModel.sortNotesInFolder(currentFolderId, sortBy, order)
-            noteViewModel.folderSortedNotes.observe(this) { sortedNotes ->
+            mainActivityViewModel.sortNotesInFolder(currentFolderId, sortBy, order)
+            mainActivityViewModel.folderSortedNotes.observe(this) { sortedNotes ->
                 noteAdapter.submitList(sortedNotes)
                 latestNotes = sortedNotes
                 updateSectionVisibility()

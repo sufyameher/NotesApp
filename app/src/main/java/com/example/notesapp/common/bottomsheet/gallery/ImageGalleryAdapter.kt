@@ -12,6 +12,10 @@ import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
 import com.example.notesapp.R
+import com.example.notesapp.common.onClick
+import com.example.notesapp.common.setImageResourceBy
+import com.example.notesapp.common.setVisible
+import com.example.notesapp.common.visibleIf
 
 class ImageGalleryAdapter(
     private val context: Context,
@@ -33,32 +37,25 @@ class ImageGalleryAdapter(
     inner class ImageViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
         private val image = itemView.findViewById<ImageView>(R.id.image)
         private val overlay = itemView.findViewById<View>(R.id.overlay)
+        val checkmark = itemView.findViewById<ImageView>(R.id.checkmark)
 
         fun bind(uri: Uri) {
             Glide.with(context).load(uri).into(image)
-            val checkmark = itemView.findViewById<ImageView>(R.id.checkmark)
-
 
             val isSelected = selectedItems.contains(uri)
 
-            checkmark.setImageResource(
-                if (isSelected) R.drawable.ic_image_selected
-                else R.drawable.ic_image_unselected
-            )
+            checkmark.setImageResourceBy(isSelected, R.drawable.ic_image_selected, R.drawable.ic_image_unselected)
+            overlay.setVisible(isSelected)
 
-             overlay.visibility = if (isSelected) View.VISIBLE else View.GONE
-
-             itemView.setOnClickListener {
+            itemView.onClick {
                 val wasSelected = selectedItems.contains(uri)
                 if (wasSelected) {
                     selectedItems.remove(uri)
                 } else {
                     selectedItems.add(uri)
                 }
-
-                 notifyItemChanged(bindingAdapterPosition)
-
-                 onImageSelected(uri, !wasSelected)
+                notifyItemChanged(bindingAdapterPosition)
+                onImageSelected(uri, !wasSelected)
             }
         }
     }
@@ -67,6 +64,13 @@ class ImageGalleryAdapter(
         private val DIFF_CALLBACK = object : DiffUtil.ItemCallback<Uri>() {
             override fun areItemsTheSame(old: Uri, new: Uri) = old == new
             override fun areContentsTheSame(old: Uri, new: Uri) = old == new
+        }
+
+        fun create(
+            context: Context,
+            onImageSelected: (Uri, Boolean) -> Unit
+        ): ImageGalleryAdapter {
+            return ImageGalleryAdapter(context, onImageSelected)
         }
     }
 }

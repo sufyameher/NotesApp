@@ -1,7 +1,7 @@
 package com.example.notesapp.folder.model
 
 import androidx.room.Embedded
-import com.example.notesapp.folder.data.FolderEntity
+import com.example.notesapp.folder.model.FolderEntity
 
 data class FolderWithNoteCount(
     @Embedded val folder: FolderEntity,

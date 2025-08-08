@@ -3,19 +3,32 @@ package com.example.notesapp.note
 import com.example.notesapp.common.Helper.sortNotesList
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.map
+import javax.inject.Inject
 
-class NoteRepository(private val noteDao: NoteDao) {
+class NoteRepository @Inject constructor(
+    private val noteDao: NoteDao
+) {
 
     suspend fun insert(note: NoteEntity) = noteDao.insert(note)
     suspend fun update(note: NoteEntity) = noteDao.update(note)
     suspend fun delete(note: NoteEntity) = noteDao.delete(note)
 
-    fun getSortedNotesFlow(folderId: Int, sortBy: String, order: String): Flow<List<NoteEntity>> = flow {
-        emit(sortNotesList(noteDao.getNotesByFolderIdRaw(folderId), sortBy, order))
+    fun getAllNotes(): Flow<List<NoteEntity>> {
+        return noteDao.getAllNotes()
     }
 
-    fun getSortedNotesByFolderIdFlow(folderId: Int, sortBy: String, order: String): Flow<List<NoteEntity>> = flow {
-        emit(sortNotesList(noteDao.getNotesByFolderIdRaw(folderId), sortBy, order))
+    suspend fun insertDummyData(note: NoteEntity): Int {
+        return noteDao.insertDummyData(note).toInt()
+    }
+
+    fun getSortedNotesFlow(folderId: Int, sortBy: String, order: String): Flow<List<NoteEntity>> {
+        return noteDao.getNotesByFolderIdRawFlow(folderId)
+            .map { notes -> sortNotesList(notes, sortBy, order) }
+    }
+
+    fun getRootNotesFlow(): Flow<List<NoteEntity>> {
+        return noteDao.getRootNotesFlow()
     }
 
     fun getNoteByIdLiveFlow(id: Int): Flow<NoteEntity> {
@@ -34,8 +47,8 @@ class NoteRepository(private val noteDao: NoteDao) {
         return noteDao.getNotesByFolderIdFlow(folderId)
     }
 
-    suspend fun getNotesByFolderIdRaw(folderId: Int): List<NoteEntity> {
-        return noteDao.getNotesByFolderIdRaw(folderId)
+     fun getNotesByFolderIdRaw(folderId: Int): Flow<List<NoteEntity>> {
+        return noteDao.getNotesByFolderIdRawFlow(folderId)
     }
 
     fun getDeletedNotesFlow(): Flow<List<NoteEntity>> = noteDao.getDeletedNotesFlow()
@@ -44,11 +57,19 @@ class NoteRepository(private val noteDao: NoteDao) {
         noteDao.delete(note)
     }
 
+    suspend fun deleteAllNotes() {
+        noteDao.deleteAllNotes()
+    }
+
     suspend fun permanentlyDeleteAllDeletedNotes() {
         noteDao.deleteAllDeletedNotes()
     }
 
     fun getAllNotesSortedFlow(): Flow<List<NoteEntity>> {
         return noteDao.getAllNotesSortedFlow()
+    }
+
+    suspend fun getAllNotesOnce(): List<NoteEntity> {
+        return noteDao.getAllNotesOnce()
     }
 }

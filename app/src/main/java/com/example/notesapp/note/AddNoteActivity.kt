@@ -1,9 +1,10 @@
 package com.example.notesapp.note
 
+import android.content.Context
+import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
 import android.util.Base64
-import android.util.Log
 import android.webkit.WebViewClient
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
@@ -11,14 +12,18 @@ import com.example.notesapp.common.bottomsheet.gallery.GalleryBottomSheet
 import com.example.notesapp.JSBridge
 import com.example.notesapp.common.Helper.hideKeyboard
 import com.example.notesapp.common.Helper.requestStoragePermissionIfNeeded
+import com.example.notesapp.common.onClick
 import com.example.notesapp.databinding.ActivityAddNoteBinding
+import dagger.hilt.android.AndroidEntryPoint
 import org.json.JSONObject
 import timber.log.Timber
 
+
+@AndroidEntryPoint
 class AddNoteActivity : AppCompatActivity() {
 
     private val binding by lazy { ActivityAddNoteBinding.inflate(layoutInflater) }
-    private val noteViewModel: NoteViewModel by viewModels()
+    private val mainActivityViewModel: MainActivityViewModel by viewModels()
     private var noteId: Int? = null
     private var existingNote: NoteEntity? = null
     private var folderId: Int = 0
@@ -36,7 +41,6 @@ class AddNoteActivity : AppCompatActivity() {
         requestStoragePermissionIfNeeded(this)
     }
 
-
     private fun initIntentData() {
         noteId = intent.getIntExtra("note_id", -1).takeIf { it != -1 }
         folderId = intent.getIntExtra("folder_id", 0).takeIf { it != -1 }!!
@@ -51,10 +55,7 @@ class AddNoteActivity : AppCompatActivity() {
 
     private fun setupView() {
         binding.etTitle.requestFocus()
-
-        binding.ivBack.setOnClickListener {
-            handleNoteSaveAndExit()
-        }
+        binding.ivBack.onClick { handleNoteSaveAndExit() }
     }
 
     private fun encodeImageToBase64(uri: Uri): String {
@@ -64,10 +65,10 @@ class AddNoteActivity : AppCompatActivity() {
     }
 
     private fun setupButtons() = with(binding) {
-        btnCheckbox.setOnClickListener { runJS("insertCheckbox();") }
-        btnBullet.setOnClickListener { runJS("insertBulletPoint();") }
-        btnNumber.setOnClickListener { runJS("insertNumberedItem();") }
-        btnImage.setOnClickListener { handleImageInsert() }
+        btnCheckbox.onClick { runJS("insertCheckbox();") }
+        btnBullet.onClick { runJS("insertBulletPoint();") }
+        btnNumber.onClick { runJS("insertNumberedItem();") }
+        btnImage.onClick { handleImageInsert() }
     }
 
     private fun runJS(script: String) {
@@ -75,18 +76,18 @@ class AddNoteActivity : AppCompatActivity() {
     }
 
     private fun handleImageInsert() {
-        GalleryBottomSheet(this) { uris ->
+        GalleryBottomSheet.show(this) { uris ->
             uris.forEach { uri ->
                 val base64 = encodeImageToBase64(uri)
                 runJS("insertImageFromBase64('data:image/png;base64,$base64');")
             }
-        }.show()
+        }
     }
 
     private fun loadExistingNoteIfNeeded() {
         noteId?.let { id ->
-            noteViewModel.getNoteById(id)
-            noteViewModel.noteById.observe(this) { note ->
+            mainActivityViewModel.getNoteById(id)
+            mainActivityViewModel.noteById.observe(this) { note ->
                 note?.let {
                     existingNote = it
                     binding.etTitle.setText(it.title)
@@ -126,13 +127,27 @@ class AddNoteActivity : AppCompatActivity() {
             val isDescEmpty = desc.isBlank()
 
             if (!isTitleEmpty || !isDescEmpty) {
-                noteViewModel.saveOrUpdateNote(title, desc, folderId, existingNote)
+                mainActivityViewModel.saveOrUpdateNote(title, desc, folderId, existingNote)
             } else if (existingNote == null) {
                 Timber.d("New empty note — not saving")
             } else {
                 Timber.d("Existing note left empty — skipping save")
             }
             onBackPressedDispatcher.onBackPressed()
+        }
+    }
+
+    companion object {
+        fun launch(
+            context: Context,
+            noteId: Int? = null,
+            folderId: Int? = null
+        ) {
+            val intent = Intent(context, AddNoteActivity::class.java).apply {
+                noteId?.let { putExtra("note_id", it) }
+                folderId?.let { putExtra("folder_id", it) }
+            }
+            context.startActivity(intent)
         }
     }
 }

@@ -1,28 +1,34 @@
 package com.example.notesapp.search
 
+import android.content.Context
 import android.content.Intent
 import android.os.Bundle
-import android.util.Log
-import android.view.View
-import android.view.inputmethod.InputMethodManager
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.widget.doOnTextChanged
-import androidx.recyclerview.widget.LinearLayoutManager
+import com.example.notesapp.common.Helper.hideKeyboard
+import com.example.notesapp.common.gone
+import com.example.notesapp.common.onClick
+import com.example.notesapp.common.setupAdapter
+import com.example.notesapp.common.show
+import com.example.notesapp.common.showKeyboardAndFocus
+import com.example.notesapp.common.visibleIfNotEmpty
 import com.example.notesapp.databinding.ActivitySearchBinding
-import com.example.notesapp.folder.ui.FolderActivity
-import com.example.notesapp.folder.data.FolderViewModel
 import com.example.notesapp.folder.adapter.FolderWithInfoAdapter
+import com.example.notesapp.folder.data.FolderActivityViewModel
+import com.example.notesapp.folder.ui.FolderActivity
 import com.example.notesapp.note.AddNoteActivity
+import com.example.notesapp.note.MainActivityViewModel
 import com.example.notesapp.note.NoteAdapter
-import com.example.notesapp.note.NoteViewModel
+import dagger.hilt.android.AndroidEntryPoint
 import timber.log.Timber
 
+@AndroidEntryPoint
 class SearchActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivitySearchBinding
-    private val noteViewModel: NoteViewModel by viewModels()
-    private val folderViewModel: FolderViewModel by viewModels()
+    private val mainActivityViewModel: MainActivityViewModel by viewModels()
+    private val folderActivityViewModel: FolderActivityViewModel by viewModels()
 
     private lateinit var folderWithInfoAdapter: FolderWithInfoAdapter
     private lateinit var noteAdapter: NoteAdapter
@@ -39,11 +45,7 @@ class SearchActivity : AppCompatActivity() {
     }
 
     private fun setupSearchBar() {
-        binding.etSearch.requestFocus()
-        binding.etSearch.postDelayed({
-            val imm = getSystemService(INPUT_METHOD_SERVICE) as InputMethodManager
-            imm.showSoftInput(binding.etSearch, InputMethodManager.SHOW_IMPLICIT)
-        }, 100)
+        binding.etSearch.showKeyboardAndFocus()
     }
 
     private fun setupRecyclerViews() {
@@ -54,23 +56,12 @@ class SearchActivity : AppCompatActivity() {
         )
 
         noteAdapter = NoteAdapter(
-            onItemClick = {
-                val intent = Intent(this, AddNoteActivity::class.java)
-                intent.putExtra("note_id", it.id)
-                startActivity(intent)
-            },
+            onItemClick = { AddNoteActivity.launch(this, noteId = it.id) },
             onNoteLongClick = { /* optional */ }
         )
 
-        binding.rvFolders.apply {
-            layoutManager = LinearLayoutManager(this@SearchActivity)
-            adapter = folderWithInfoAdapter
-        }
-
-        binding.rvNotes.apply {
-            layoutManager = LinearLayoutManager(this@SearchActivity)
-            adapter = noteAdapter
-        }
+        binding.rvNotes.setupAdapter(noteAdapter)
+        binding.rvFolders.setupAdapter(folderWithInfoAdapter)
     }
 
     private fun setupSearchListeners() {
@@ -78,22 +69,23 @@ class SearchActivity : AppCompatActivity() {
             val query = text.toString().trim()
 
             if (query.isNotEmpty()) {
-                binding.ivClear.visibility = View.VISIBLE
+                binding.ivClear.show()
 
-                folderViewModel.searchFolderSummaries(query).observe(this) { folders ->
+                folderActivityViewModel.searchFolderSummaries(query)
+                folderActivityViewModel.folderSearchResults.observe(this) { folders ->
                     folders.forEach {
                         Timber.d("Folder: ${it.folder.name}, Subfolders: ${it.subfolderCount}, Notes: ${it.noteCount}")
                     }
                     folderWithInfoAdapter.updateFolders(folders)
-                    binding.tvFolders.visibility = if (folders.isEmpty()) View.GONE else View.VISIBLE
-                    binding.rvFolders.visibility = if (folders.isEmpty()) View.GONE else View.VISIBLE
+                    binding.tvFolders.visibleIfNotEmpty(folders)
+                    binding.rvFolders.visibleIfNotEmpty(folders)
                 }
 
-                noteViewModel.searchNotes(query) // just triggers the search
-                noteViewModel.searchResults.observe(this) { notes ->
+                mainActivityViewModel.searchNotes(query)
+                mainActivityViewModel.searchResults.observe(this) { notes ->
                     noteAdapter.submitList(notes)
-                    binding.tvNotes.visibility = if (notes.isEmpty()) View.GONE else View.VISIBLE
-                    binding.rvNotes.visibility = if (notes.isEmpty()) View.GONE else View.VISIBLE
+                    binding.tvNotes.visibleIfNotEmpty(notes)
+                    binding.rvNotes.visibleIfNotEmpty(notes)
                 }
 
             } else {
@@ -101,26 +93,25 @@ class SearchActivity : AppCompatActivity() {
             }
         }
 
-        binding.ivClear.setOnClickListener {
+        binding.ivClear.onClick {
             binding.etSearch.setText("")
         }
     }
 
     private fun clearSearchResults() {
-        binding.ivClear.visibility = View.GONE
+        binding.ivClear.gone()
         folderWithInfoAdapter.updateFolders(emptyList())
         noteAdapter.submitList(emptyList())
 
-        binding.tvFolders.visibility = View.GONE
-        binding.rvFolders.visibility = View.GONE
-        binding.tvNotes.visibility = View.GONE
-        binding.rvNotes.visibility = View.GONE
+        binding.tvFolders.gone()
+        binding.rvFolders.gone()
+        binding.tvNotes.gone()
+        binding.rvNotes.gone()
     }
 
     private fun setupCancelButton() {
-        binding.btnCancel.setOnClickListener {
-            val imm = getSystemService(INPUT_METHOD_SERVICE) as InputMethodManager
-            imm.hideSoftInputFromWindow(binding.etSearch.windowToken, 0)
+        binding.btnCancel.onClick {
+            binding.etSearch.hideKeyboard()
             finish()
         }
     }
@@ -128,4 +119,12 @@ class SearchActivity : AppCompatActivity() {
     private fun openSubFolder(folderId: Int, folderName: String) {
         FolderActivity.start(this, folderId, folderName)
     }
+
+    companion object {
+        fun start(context: Context) {
+            val intent = Intent(context, SearchActivity::class.java)
+            context.startActivity(intent)
+        }
+    }
+
 }

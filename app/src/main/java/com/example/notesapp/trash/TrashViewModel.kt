@@ -1,21 +1,23 @@
 package com.example.notesapp.trash
 
-import android.app.Application
-import androidx.lifecycle.AndroidViewModel
+import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.notesapp.common.LiveDataHost
-import com.example.notesapp.db.AppDatabase
 import com.example.notesapp.note.NoteEntity
 import com.example.notesapp.note.NoteRepository
+import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.launch
+import javax.inject.Inject
 
-class TrashViewModel(application: Application) : AndroidViewModel(application) {
-    private val noteRepository = NoteRepository(AppDatabase.getInstance(application).noteDao())
+@HiltViewModel
+class TrashViewModel @Inject constructor(
+    private val noteRepository: NoteRepository
+) : ViewModel() {
 
     val deletedNotes = LiveDataHost(viewModelScope, emptyList<NoteEntity>())
 
-    init {
-         deletedNotes(noteRepository.getDeletedNotesFlow())
+    fun loadDeletedNotes() {
+        deletedNotes(noteRepository.getDeletedNotesFlow())
     }
 
     fun permanentlyDelete(note: NoteEntity) = viewModelScope.launch {

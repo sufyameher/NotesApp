@@ -16,7 +16,9 @@ class PopupMenuWindow(
     private val anchor: View,
     private val currentViewMode: ViewMode,
     private val onClickSort: () -> Unit,
-    private val onClickViewModeChange: (ViewMode) -> Unit
+    private val onClickViewModeChange: (ViewMode) -> Unit,
+    private val onClickAddDummyData: (() -> Unit)? = null
+
 ) {
     private val binding = PopupMenuBinding.inflate(LayoutInflater.from(context))
     private val popupWindow = PopupWindow(
@@ -46,6 +48,14 @@ class PopupMenuWindow(
             onClickViewModeChange(newMode)
             popupWindow.dismiss()
         })
+
+        onClickAddDummyData?.let {
+            binding.popupLayout.addView(createItem(anchor.context, R.drawable.ic_add_folder, "Add Dummy Data") {
+                it()
+                popupWindow.dismiss()
+            })
+        }
+
 
         popupWindow.showAsDropDown(anchor)
     }

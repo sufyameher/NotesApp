@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:background="@drawable/bg_bottom_sheet_rounded"
@@ -23,7 +24,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginStart="8dp"
-            android:text="Note name"
+            android:text="@string/note_name"
             android:textSize="16sp"
             android:textStyle="bold" />
     </LinearLayout>
@@ -32,7 +33,7 @@
         android:id="@+id/tvNoteDate"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="17/06/23"
+        android:text="@string/note_created_date_june_17_2023"
         android:textAppearance="?attr/textAppearanceBody2"
         android:layout_marginStart="32dp"
         android:layout_marginTop="4dp" />
@@ -42,6 +43,29 @@
         android:layout_height="1dp"
         android:layout_marginVertical="8dp"
         android:background="#DDDDDD" />
+
+    <LinearLayout
+        android:id="@+id/optionPin"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:paddingVertical="15dp"
+        android:gravity="center_vertical">
+
+        <ImageView
+            android:id="@+id/ivPinIcon"
+            android:layout_width="24dp"
+            android:layout_height="24dp"
+            android:src="@drawable/ic_pin"
+            tools:ignore="DuplicateIds" />
+
+        <TextView
+            android:id="@+id/tvPinText"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/pin"
+            android:layout_marginStart="12dp" />
+    </LinearLayout>
 
     <LinearLayout
         android:id="@+id/optionRecover"
@@ -58,9 +82,9 @@
             android:src="@drawable/ic_recover" />
 
         <TextView
-            android:layout_width="wrap_content"
+             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Recover"
+            android:text="@string/recover"
             android:layout_marginStart="12dp" />
     </LinearLayout>
 
@@ -82,7 +106,7 @@
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Move to"
+            android:text="@string/move_to"
             android:layout_marginStart="12dp" />
     </LinearLayout>
 
@@ -103,7 +127,7 @@
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Copy to"
+            android:text="@string/copy_to"
             android:layout_marginStart="12dp" />
     </LinearLayout>
 
@@ -124,7 +148,7 @@
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Delete"
+            android:text="@string/delete"
             android:textColor="@color/red"
             android:layout_marginStart="12dp" />
     </LinearLayout>

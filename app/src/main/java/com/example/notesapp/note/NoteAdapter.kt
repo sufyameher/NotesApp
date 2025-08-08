@@ -10,6 +10,13 @@ import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import com.example.notesapp.R
 import com.example.notesapp.common.Helper.formatDate
+import com.example.notesapp.common.firstLinePreview
+import com.example.notesapp.common.gone
+import com.example.notesapp.common.onClick
+import com.example.notesapp.common.onLongClick
+import com.example.notesapp.common.setDrawableBackground
+import com.example.notesapp.common.setVisible
+import com.example.notesapp.common.show
 import com.example.notesapp.databinding.ItemNoteBinding
 
 class NoteAdapter(
@@ -44,21 +51,19 @@ class NoteAdapter(
 
             val bitmap = BitmapFactory.decodeByteArray(imageBytes, 0, imageBytes.size, options)
             holder.binding.ivImageIndicator.setImageBitmap(bitmap)
-            holder.binding.ivImageIndicator.visibility = View.VISIBLE
+            holder.binding.ivImageIndicator.show()
         } else {
-            holder.binding.ivImageIndicator.visibility = View.GONE
+            holder.binding.ivImageIndicator.gone()
         }
     }
 
-    inner class ViewHolder(val binding: ItemNoteBinding) :
-        RecyclerView.ViewHolder(binding.root) {
-
+    inner class ViewHolder(val binding: ItemNoteBinding) : RecyclerView.ViewHolder(binding.root) {
         fun bind(note: NoteEntity) = with(binding) {
             title.text = getDisplayTitle(note)
 
             val createdDate = formatDate(note.createdDate)
             val modifiedDate = formatDate(note.modifiedDate)
-            val desc = note.description?.lineSequence()?.firstOrNull()?.take(100)?.trim() ?: ""
+            val desc = note.description.firstLinePreview()
             val dateText = if (note.isEdited) "$modifiedDate (edited)" else createdDate
 
             dateAndDesc.text = if (desc.isNotEmpty()) {
@@ -68,16 +73,16 @@ class NoteAdapter(
             }
 
             val isSelected = selectedIds.contains(note.id)
-            ivSelector.visibility = if (isMultiSelectMode) View.VISIBLE else View.GONE
+            ivSelector.setVisible(isMultiSelectMode)
             ivSelector.setImageResource(
                 if (isSelected) R.drawable.ic_check_circle else R.drawable.ic_circle
             )
 
-            root.background = root.context.getDrawable(
+            root.setDrawableBackground(
                 if (isSelected) R.drawable.bg_note_selected else R.drawable.bg_note_unselected
             )
 
-            root.setOnClickListener {
+            root.onClick {
                 if (isMultiSelectMode) {
                     onSelectionToggle?.invoke(note)
                 } else {
@@ -85,7 +90,7 @@ class NoteAdapter(
                 }
             }
 
-            root.setOnLongClickListener {
+            root.onLongClick {
                 if (!isMultiSelectMode) {
                     isMultiSelectMode = true
                     onSelectionToggle?.invoke(note)
@@ -93,6 +98,7 @@ class NoteAdapter(
                 onNoteLongClick(note)
                 true
             }
+            ivPinned.setVisible(note.isPinned)
         }
     }
 
@@ -102,22 +108,23 @@ class NoteAdapter(
         return regex.find(description)?.groupValues?.get(1)
     }
 
+    private fun getDisplayTitle(note: NoteEntity): String {
+        return if (note.title.isNotBlank()) {
+            note.title
+        } else {
+            note.description?.lineSequence()?.firstOrNull()?.take(100) ?: ""
+        }
+    }
+
     companion object {
         private val DiffCallback = object : DiffUtil.ItemCallback<NoteEntity>() {
             override fun areItemsTheSame(oldItem: NoteEntity, newItem: NoteEntity) =
                 oldItem.id == newItem.id
 
-            override fun areContentsTheSame(oldItem: NoteEntity, newItem: NoteEntity) =
-                oldItem == newItem
-        }
-
-        private fun getDisplayTitle(note: NoteEntity): String {
-            return if (note.title.isNotBlank()) {
-                note.title
-            } else {
-                note.description?.lineSequence()?.firstOrNull()?.take(100) ?: ""
+            override fun areContentsTheSame(oldItem: NoteEntity, newItem: NoteEntity): Boolean {
+                return oldItem.title == newItem.title &&
+                        oldItem.isPinned == newItem.isPinned
             }
         }
-
     }
 }

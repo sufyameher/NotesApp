@@ -27,7 +27,7 @@
             android:id="@+id/textPermissionNote"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="This app can only access photos that you select."
+            android:text="@string/this_app_can_only_access_photos_that_you_select"
             android:textColor="#888888"
             android:textSize="13sp"
             android:padding="10dp"
@@ -51,7 +51,7 @@
         android:layout_height="wrap_content"
         android:layout_gravity="bottom"
         android:layout_margin="12dp"
-        android:text="Done"
+        android:text="@string/done"
         android:backgroundTint="#5B75E5"
         android:visibility="gone"/>
 </FrameLayout>

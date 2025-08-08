@@ -4,72 +4,54 @@ import android.os.Bundle
 import androidx.activity.viewModels
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
-import androidx.recyclerview.widget.LinearLayoutManager
 import com.example.notesapp.note.NoteAdapter
 import com.example.notesapp.common.Helper.toast
+import com.example.notesapp.common.getNoteSwipeForTrash
+import com.example.notesapp.common.onClick
+import com.example.notesapp.common.setupAdapter
 import com.example.notesapp.databinding.ActivityRecentlyDeletedBinding
 import com.example.notesapp.note.NoteEntity
 import com.example.notesapp.util.showMoveConfirmDialog
-import com.example.notesapp.folder.data.FolderViewModel
-import com.example.notesapp.note.NoteViewModel
+import com.example.notesapp.folder.data.FolderActivityViewModel
+import com.example.notesapp.note.MainActivityViewModel
+import dagger.hilt.android.AndroidEntryPoint
 
+@AndroidEntryPoint
 class TrashActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityRecentlyDeletedBinding
-    private val noteViewModel: NoteViewModel by viewModels()
+    private val mainActivityViewModel: MainActivityViewModel by viewModels()
     private val trashViewModel: TrashViewModel by viewModels()
-    private val folderViewModel: FolderViewModel by viewModels()
+    private val folderActivityViewModel: FolderActivityViewModel by viewModels()
     private lateinit var adapter: NoteAdapter
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityRecentlyDeletedBinding.inflate(layoutInflater)
         setContentView(binding.root)
-        folderViewModel.activeFolders.observe(this) { /* Optional cache or UI update */ }
+        folderActivityViewModel.activeFolders.observe(this) { /* Optional cache or UI update */ }
 
         setupToolbar()
         setupRecyclerView()
         observeDeletedNotes()
+        trashViewModel.loadDeletedNotes()
     }
 
     private fun setupToolbar() {
-        binding.ivBack.setOnClickListener { finish() }
-        binding.ivDeleteAll.setOnClickListener { showClearDeletedConfirmation() }
+        binding.ivBack.onClick { finish() }
+        binding.ivDeleteAll.onClick { showClearDeletedConfirmation() }
     }
 
     private fun setupRecyclerView() {
         setupAdapter()
-        binding.recyclerView.apply {
-            layoutManager = LinearLayoutManager(this@TrashActivity)
-            adapter = this@TrashActivity.adapter
+        binding.recyclerView.setupAdapter(adapter)
 
-            // ✅ Make a final val to avoid smart cast issue
-            val currentAdapter = this@TrashActivity.adapter
-
-            val swipeCallback = object : androidx.recyclerview.widget.ItemTouchHelper.SimpleCallback(0, androidx.recyclerview.widget.ItemTouchHelper.LEFT or androidx.recyclerview.widget.ItemTouchHelper.RIGHT) {
-                override fun onMove(
-                    recyclerView: androidx.recyclerview.widget.RecyclerView,
-                    viewHolder: androidx.recyclerview.widget.RecyclerView.ViewHolder,
-                    target: androidx.recyclerview.widget.RecyclerView.ViewHolder
-                ): Boolean = false
-
-                override fun onSwiped(viewHolder: androidx.recyclerview.widget.RecyclerView.ViewHolder, direction: Int) {
-                    val position = viewHolder.adapterPosition
-                    val note = currentAdapter.currentList.getOrNull(position)
-
-                    if (note != null) {
-                        showDeletedNoteOptions(note)
-                        currentAdapter.notifyItemChanged(position) // ✅ reset swipe animation
-                    } else {
-                        currentAdapter.notifyItemChanged(position)
-                    }
-                }
-            }
-
-            androidx.recyclerview.widget.ItemTouchHelper(swipeCallback).attachToRecyclerView(this)
+        val swipeHandler = getNoteSwipeForTrash(adapter) { note ->
+            showDeletedNoteOptions(note)
         }
-    }
 
+        swipeHandler.attachToRecyclerView(binding.recyclerView)
+    }
 
     private fun setupAdapter() {
         adapter = NoteAdapter(
@@ -96,7 +78,7 @@ class TrashActivity : AppCompatActivity() {
     }
 
     private fun handleMoveTo(selectedNote: NoteEntity) {
-        val folders = folderViewModel.activeFolders.value.orEmpty()
+        val folders = folderActivityViewModel.activeFolders.value.orEmpty()
         val availableFolders = folders.filter { it.id != selectedNote.folderId }
 
         if (availableFolders.isEmpty()) {
@@ -115,7 +97,7 @@ class TrashActivity : AppCompatActivity() {
                 folderId = targetFolder?.id ?: 0,
                 isDeleted = false
             )
-            noteViewModel.update(movedNote)
+            mainActivityViewModel.update(movedNote)
             toast("Note moved")
 
         }
@@ -134,8 +116,7 @@ class TrashActivity : AppCompatActivity() {
             .setNegativeButton("Cancel", null)
             .setPositiveButton("Delete") { _, _ ->
                 trashViewModel.permanentlyDeleteAll()
-            }
-            .show()
+            }.show()
     }
 
     companion object {

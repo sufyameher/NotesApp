@@ -8,7 +8,7 @@
 
     <!-- Sort By Title -->
     <TextView
-        android:text="Sort By"
+        android:text="@string/sort_by"
         android:textStyle="bold"
         android:textSize="18sp"
         android:layout_width="wrap_content"
@@ -23,26 +23,26 @@
 
         <RadioButton
             android:id="@+id/rbDateCreated"
-            android:text="Date Created"
+            android:text="@string/date_created"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content" />
 
         <RadioButton
             android:id="@+id/rbDateEdited"
-            android:text="Date Modified"
+            android:text="@string/date_modified"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content" />
 
         <RadioButton
             android:id="@+id/rbTitle"
-            android:text="Title"
+            android:text="@string/title"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content" />
     </RadioGroup>
 
     <!-- Order Title -->
     <TextView
-        android:text="Order"
+        android:text="@string/order"
         android:textStyle="bold"
         android:textSize="18sp"
         android:layout_marginTop="16dp"
@@ -58,13 +58,13 @@
 
         <RadioButton
             android:id="@+id/rbOldToNew"
-            android:text="Old to New"
+            android:text="@string/old_to_new"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content" />
 
         <RadioButton
             android:id="@+id/rbNewToOld"
-            android:text="New to Old"
+            android:text="@string/new_to_old"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content" />
     </RadioGroup>
