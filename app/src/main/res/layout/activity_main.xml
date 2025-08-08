@@ -4,47 +4,105 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/drawerLayout"
     android:layout_width="match_parent"
-    android:background="@color/lightGray"
     android:layout_height="match_parent"
-    tools:ignore="ExtraText">
+    tools:ignore="ExtraText"
+    android:background="@color/lightGray">
 
         <androidx.coordinatorlayout.widget.CoordinatorLayout
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:background="@color/lightGray">
+            android:background="@color/white">
 
+
+        <!-- Sticky bar container: topBar and selectionTopBar (toggle visibility) -->
+                <FrameLayout
+                    android:id="@+id/topBarContainer"
+                    android:layout_width="match_parent"
+                    android:layout_height="?attr/actionBarSize"
+                    android:background="@color/white">
+
+                        <include
+                            android:id="@+id/topBar"
+                            layout="@layout/tool_bar_layout"
+                            android:layout_width="match_parent"
+                            android:layout_height="match_parent"
+                            android:visibility="visible" />
+
+                        <LinearLayout
+                            android:id="@+id/selectionTopBar"
+                            android:layout_width="match_parent"
+                            android:layout_height="match_parent"
+                            android:background="#F1F2FA"
+                            android:paddingStart="16dp"
+                            android:paddingEnd="16dp"
+                            android:orientation="horizontal"
+                            android:gravity="center_vertical"
+                            android:visibility="gone">
+
+                                <ImageView
+                                    android:id="@+id/ivCloseSelection"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:src="@drawable/ic_close"
+                                    android:contentDescription="Close Selection" />
+
+                                <TextView
+                                    android:id="@+id/tvSelectedCount"
+                                    android:layout_width="0dp"
+                                    android:layout_height="wrap_content"
+                                    android:layout_marginStart="16dp"
+                                    android:layout_weight="1"
+                                    android:text="@string/selected"
+                                    android:textSize="19sp"
+                                    android:textStyle="bold" />
+
+                                <ImageView
+                                    android:id="@+id/ivShareSelection"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:layout_marginEnd="16dp"
+                                    android:src="@drawable/ic_share"
+                                    android:contentDescription="Share" />
+
+                                <ImageView
+                                    android:id="@+id/ivSelectionMenu"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:src="@drawable/ic_more_vertical"
+                                    android:contentDescription="More Actions" />
+                        </LinearLayout>
+                </FrameLayout>
+
+                <!-- Scrollable content below the sticky top bar -->
                 <androidx.core.widget.NestedScrollView
                     android:id="@+id/scrollView2"
                     android:layout_width="match_parent"
                     android:layout_height="match_parent"
+                    android:layout_marginTop="?attr/actionBarSize"
                     android:fillViewport="true">
 
                         <LinearLayout
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:orientation="vertical"
-                            android:background="@color/white"
-                            android:elevation="2dp" >
-
-                                <include
-                                   android:id="@+id/topBar"
-                                   layout="@layout/tool_bar_layout" />
+                            android:paddingTop="0dp"
+                            android:background="@color/white">
 
                                 <View
                                     android:id="@+id/bottomSpacer"
                                     android:layout_width="match_parent"
-                                    android:layout_height="8dp"
+                                    android:layout_height="9dp"
                                     android:visibility="gone"
                                     android:background="#F2F2F2" />
 
-                                <!-- Folders Section -->
+                                <!-- Folder Section -->
                                 <TextView
                                     android:id="@+id/tvFolders"
                                     android:layout_width="wrap_content"
                                     android:layout_height="wrap_content"
                                     android:layout_marginStart="16dp"
-                                    android:text="Folders"
                                     android:layout_marginTop="10dp"
+                                    android:text="@string/folders"
                                     android:textColor="@android:color/darker_gray"
                                     android:textSize="18sp"
                                     android:textStyle="bold" />
@@ -67,8 +125,7 @@
                                     android:layout_height="9dp"
                                     android:visibility="gone"
                                     android:layout_marginTop="1dp"
-                                    android:background="#F2F2F2"
-                                    tools:ignore="DuplicateIds" />
+                                    android:background="#F2F2F2" />
 
                                 <!-- Notes Section -->
                                 <TextView
@@ -77,7 +134,7 @@
                                     android:layout_height="wrap_content"
                                     android:layout_marginStart="16dp"
                                     android:layout_marginTop="10dp"
-                                    android:text="Notes"
+                                    android:text="@string/notes"
                                     android:textColor="@android:color/darker_gray"
                                     android:textSize="18sp"
                                     android:textStyle="bold" />
@@ -89,10 +146,10 @@
                                     android:clipToPadding="false"
                                     android:nestedScrollingEnabled="false"
                                     android:padding="16dp" />
-
                         </LinearLayout>
                 </androidx.core.widget.NestedScrollView>
 
+                <!-- Floating action button -->
                 <com.google.android.material.floatingactionbutton.FloatingActionButton
                     android:id="@+id/fab"
                     android:layout_width="wrap_content"
@@ -102,6 +159,7 @@
                     app:backgroundTint="#EAC9F4"
                     app:srcCompat="@drawable/add_circle_24"
                     android:contentDescription="Add Note" />
+
         </androidx.coordinatorlayout.widget.CoordinatorLayout>
 
         <!-- Navigation Drawer -->

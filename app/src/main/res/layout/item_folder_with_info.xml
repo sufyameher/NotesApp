@@ -25,14 +25,14 @@
             android:id="@+id/tvFolderName"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Folder Name"
+            android:text="@string/folder_name"
             android:textSize="18sp" />
 
         <TextView
             android:id="@+id/tvFolderInfo"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="2 subfolders · 3 notes"
+            android:text="@string/subfolders_2_notes_3"
             android:textColor="#888888"
             android:textSize="10sp" />
     </LinearLayout>

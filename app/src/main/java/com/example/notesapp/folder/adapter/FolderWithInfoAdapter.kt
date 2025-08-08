@@ -1,11 +1,13 @@
-package com.example.notesapp.folder
+package com.example.notesapp.folder.adapter
 
-import android.util.Log
 import android.view.LayoutInflater
-import android.view.View
 import android.view.ViewGroup
 import androidx.recyclerview.widget.RecyclerView
+import com.example.notesapp.common.onClick
+import com.example.notesapp.common.onLongClick
+import com.example.notesapp.common.setVisible
 import com.example.notesapp.databinding.ItemFolderWithInfoBinding
+import com.example.notesapp.folder.model.FolderWithNoteCount
 
 class FolderWithInfoAdapter(
     private var folders: List<FolderWithNoteCount>,
@@ -30,10 +32,6 @@ class FolderWithInfoAdapter(
 
         fun bind(item: FolderWithNoteCount) = with(binding) {
             val (folder, subfolderCount, noteCount) = item
-
-            Log.d("FolderDebug", "Folder: ${folder.name}, Subfolders: $subfolderCount, Notes: $noteCount")
-
-
             tvFolderName.text = folder.name
 
             val info = when {
@@ -47,19 +45,12 @@ class FolderWithInfoAdapter(
             }
 
             tvFolderInfo.text = info
-            tvFolderInfo.visibility = if (info.isEmpty()) View.GONE else View.VISIBLE
+            tvFolderInfo.setVisible(info.isNotEmpty())
 
-            root.setOnClickListener { onFolderClick(item) }
-            root.setOnLongClickListener {
-                onFolderLongClick(item)
+            root.onClick { onFolderClick(item) }
+            root.onLongClick { onFolderLongClick(item)
                 true
             }
-        }
-
-        private fun buildInfo(subfolders: Int, notes: Int): String {
-            val subfolderText = "$subfolders subfolder${if (subfolders != 1) "s" else ""}"
-            val noteText = "$notes note${if (notes != 1) "s" else ""}"
-            return "$subfolderText · $noteText"
         }
     }
 

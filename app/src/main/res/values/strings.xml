@@ -45,4 +45,34 @@
     </string>
     <string name="navigation_drawer_open">navigation drawer open</string>
     <string name="navigation_drawer_close">navigation drawer close</string>
+    <string name="done">Done</string>
+    <string name="old_to_new">Old to New</string>
+    <string name="new_to_old">New to Old</string>
+    <string name="cancel">Cancel</string>
+    <string name="confirm">Confirm</string>
+    <string name="sort_by">Sort By</string>
+    <string name="date_created">Date Created</string>
+    <string name="date_modified">Date Modified</string>
+    <string name="title">Title</string>
+    <string name="order">Order</string>
+    <string name="recently_deleted">Recently Deleted</string>
+    <string name="folder_name">Folder name</string>
+    <string name="home">Home</string>
+    <string name="move_to">Move to</string>
+    <string name="notes_app">Notes App</string>
+    <string name="note_name">Note name</string>
+    <string name="delete">Delete</string>
+    <string name="copy_to">Copy to</string>
+    <string name="recover">Recover</string>
+    <string name="pin">Pin</string>
+    <string name="note_created_date_june_17_2023">17/06/23</string>
+    <string name="folders">Folders</string>
+    <string name="notes">Notes</string>
+    <string name="selected">0 Selected</string>
+    <string name="subfolders_2_notes_3">2 subfolders · 3 notes</string>
+    <string name="folders_2_notes_4">2 folders · 4 notes</string>
+    <string name="subfolders">Subfolders</string>
+    <string name="this_app_can_only_access_photos_that_you_select">This app can only access photos that you select.</string>
+    <string name="empty_string"></string>
+
 </resources>

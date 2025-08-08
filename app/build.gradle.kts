@@ -1,8 +1,10 @@
+import org.gradle.kotlin.dsl.implementation
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     id("kotlin-kapt")
-
+    id ("dagger.hilt.android.plugin")
 }
 
 android {
@@ -50,12 +52,14 @@ dependencies {
     implementation(libs.androidx.constraintlayout)
     implementation(libs.androidx.navigation.fragment.ktx)
     implementation(libs.androidx.navigation.ui.ktx)
+    implementation(libs.androidx.adapters)
+    implementation(libs.firebase.crashlytics.buildtools)
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
     // Room
-    implementation("androidx.room:room-runtime:2.7.1")
-    kapt("androidx.room:room-compiler:2.7.1")
+    implementation("androidx.room:room-runtime:2.6.1")
+    kapt("androidx.room:room-compiler:2.6.1")
     implementation("androidx.room:room-ktx:2.6.1") // For coroutines support
 
 
@@ -65,5 +69,19 @@ dependencies {
 
     // RecyclerView & FAB
     implementation("androidx.recyclerview:recyclerview:1.3.2")
+
+    implementation("com.github.bumptech.glide:glide:4.16.0")
+    kapt ("com.github.bumptech.glide:compiler:4.16.0")
+
+    implementation ("com.google.code.gson:gson:2.10.1")
+    implementation ("androidx.preference:preference:1.2.1")
+
+    implementation ("com.jakewharton.timber:timber:5.0.1")
+
+    implementation ("com.google.dagger:hilt-android:2.51.1")
+    kapt ("com.google.dagger:hilt-compiler:2.51.1")
+
+    // For ViewModel injection
+    implementation("androidx.hilt:hilt-navigation-fragment:1.1.0")
 
 }
